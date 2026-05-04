@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vídeo IA Studio</title>
-  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="style.css?v=9" />
 </head>
 <body>
   <main class="app-shell">
@@ -35,6 +35,9 @@
             Fonte de mídia
             <select id="mediaProvider">
               <option value="auto" selected>Automático grátis</option>
+              <option value="pexels">Pexels fotos/vídeos</option>
+              <option value="pexels-videos">Pexels vídeos</option>
+              <option value="pexels-photos">Pexels fotos</option>
               <option value="wikimedia">Wikimedia grátis</option>
               <option value="openverse">Openverse grátis</option>
               <option value="nasa">NASA grátis</option>
@@ -66,7 +69,7 @@
           <audio id="audioPreview" controls></audio>
         </div>
 
-        <p class="note">Correções aplicadas: CORS em imagens, preload/cache, fallback visual, exportação WebM com áudio enviado ou gerado por endpoint TTS. A voz do botão Narrar grátis é só prévia e não entra no arquivo.</p>
+        <p class="note">Correções aplicadas: CORS em imagens, preload/cache, fallback visual, Pexels API, exportação WebM com áudio enviado ou gerado por endpoint TTS. A voz do botão Narrar grátis é só prévia e não entra no arquivo.</p>
 
         <div class="actions wrap">
           <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
@@ -82,7 +85,7 @@
       <section class="status-grid">
         <button class="feature-card" id="featureMedia" type="button">
           <span>🌐</span>
-          <p>Wikimedia, Openverse e NASA</p>
+          <p>Pexels, Wikimedia, Openverse e NASA</p>
         </button>
         <button class="feature-card" id="featureVoice" type="button">
           <span>🎙️</span>
@@ -140,6 +143,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>
