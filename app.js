@@ -1,505 +1,328 @@
-const input = document.getElementById('scriptInput');
-const generateBtn = document.getElementById('generateBtn');
-const mediaBtn = document.getElementById('mediaBtn');
-const voiceBtn = document.getElementById('voiceBtn');
-const captionBtn = document.getElementById('captionBtn');
-const exportBtn = document.getElementById('exportBtn');
-const copyBtn = document.getElementById('copyBtn');
-const languageBtn = document.getElementById('languageBtn');
-const appState = document.getElementById('appState');
-const scriptOutput = document.getElementById('scriptOutput');
-const captionText = document.getElementById('captionText');
-const sceneImage = document.getElementById('sceneImage');
-const sceneVideo = document.getElementById('sceneVideo');
-const videoStatus = document.getElementById('videoStatus');
-const timeline = document.getElementById('timeline');
-const mediaGrid = document.getElementById('mediaGrid');
-const mediaSource = document.getElementById('mediaSource');
-const renderCanvas = document.getElementById('renderCanvas');
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('scriptInput');
+  const generateBtn = document.getElementById('generateBtn');
+  const mediaBtn = document.getElementById('mediaBtn');
+  const voiceBtn = document.getElementById('voiceBtn');
+  const captionBtn = document.getElementById('captionBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const languageBtn = document.getElementById('languageBtn');
+  const appState = document.getElementById('appState');
+  const scriptOutput = document.getElementById('scriptOutput');
+  const captionText = document.getElementById('captionText');
+  const sceneImage = document.getElementById('sceneImage');
+  const sceneVideo = document.getElementById('sceneVideo');
+  const videoStatus = document.getElementById('videoStatus');
+  const timeline = document.getElementById('timeline');
+  const mediaGrid = document.getElementById('mediaGrid');
+  const mediaSource = document.getElementById('mediaSource');
+  const renderCanvas = document.getElementById('renderCanvas');
+  const videoFrame = document.getElementById('videoFrame');
 
-let currentScript = '';
-let currentScenes = [];
-let currentMedia = [];
-let sceneIndex = 0;
-let sceneTimer = null;
-let captionsVisible = true;
-let currentLang = 'pt-BR';
+  let currentScript = '';
+  let currentScenes = [];
+  let sceneIndex = 0;
+  let sceneTimer = null;
+  let captionsVisible = true;
+  let currentLang = 'pt-BR';
+  let selectedTheme = 0;
 
-const fallbackMedia = [
-  'https://picsum.photos/seed/space-ai-1/720/1280',
-  'https://picsum.photos/seed/space-ai-2/720/1280',
-  'https://picsum.photos/seed/space-ai-3/720/1280',
-  'https://picsum.photos/seed/space-ai-4/720/1280'
-];
-
-function setState(message) {
-  appState.textContent = message;
-  videoStatus.textContent = message;
-}
-
-function cleanText(text) {
-  return String(text || '').replace(/\s+/g, ' ').trim();
-}
-
-function isProbablyTheme(text) {
-  return cleanText(text).split(' ').length <= 10;
-}
-
-function createScriptFromTheme(theme) {
-  return `Você sabia que ${theme} pode virar um vídeo incrível em poucos segundos? A inteligência artificial analisa o tema, busca imagens impactantes, cria uma narração natural e adiciona legendas automaticamente. Em poucos cliques, você transforma uma ideia simples em um vídeo pronto para postar no TikTok, Reels ou Shorts.`;
-}
-
-function splitIntoScenes(script) {
-  const sentences = script
-    .split(/(?<=[.!?])\s+/)
-    .map(cleanText)
-    .filter(Boolean);
-
-  if (sentences.length >= 4) return sentences.slice(0, 4);
-
-  const words = script.split(' ');
-  const chunkSize = Math.max(1, Math.ceil(words.length / 4));
-  return Array.from({ length: 4 }, (_, index) => {
-    return words.slice(index * chunkSize, (index + 1) * chunkSize).join(' ');
-  }).filter(Boolean);
-}
-
-function extractKeywords(text) {
-  const stopwords = ['sobre', 'para', 'com', 'uma', 'que', 'isso', 'esse', 'essa', 'você', 'crie', 'vídeo', 'roteiro', 'pode', 'como', 'mais'];
-  const words = cleanText(text)
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, '')
-    .split(' ')
-    .filter(word => word.length > 3 && !stopwords.includes(word));
-
-  return words.slice(0, 4).join(' ') || 'space technology';
-}
-
-async function searchWikimediaMedia(query) {
-  const api = 'https://commons.wikimedia.org/w/api.php';
-  const params = new URLSearchParams({
-    origin: '*',
-    action: 'query',
-    generator: 'search',
-    gsrsearch: `${query} filetype:bitmap`,
-    gsrnamespace: '6',
-    gsrlimit: '12',
-    prop: 'imageinfo',
-    iiprop: 'url|mime|thumburl',
-    iiurlwidth: '720',
-    format: 'json'
-  });
-
-  const response = await fetch(`${api}?${params}`);
-  if (!response.ok) throw new Error('Erro ao buscar mídias');
-
-  const data = await response.json();
-  const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
-
-  return pages
-    .map(page => {
-      const info = page.imageinfo?.[0];
-      if (!info || !info.mime?.startsWith('image')) return null;
-      return {
-        title: page.title,
-        type: 'image',
-        src: info.thumburl || info.url,
-        original: info.url
-      };
-    })
-    .filter(Boolean);
-}
-
-function fallbackMediaList() {
-  return fallbackMedia.map((src, index) => ({
-    title: `Mídia grátis ${index + 1}`,
-    type: 'image',
-    src,
-    original: src
-  }));
-}
-
-async function loadMedia() {
-  const baseText = cleanText(input.value || currentScript || 'universo tecnologia inteligencia artificial');
-  const query = extractKeywords(baseText);
-  setState('Buscando mídias grátis...');
-
-  try {
-    const media = await searchWikimediaMedia(query);
-    currentMedia = media.length ? media : fallbackMediaList();
-    mediaSource.textContent = media.length ? 'Wikimedia Commons' : 'Fallback gratuito';
-  } catch (error) {
-    currentMedia = fallbackMediaList();
-    mediaSource.textContent = 'Fallback gratuito';
-  }
-
-  renderMediaGrid();
-  setState('Mídias carregadas');
-}
-
-function renderMediaGrid() {
-  mediaGrid.innerHTML = '';
-
-  currentMedia.slice(0, 6).forEach((item) => {
-    const card = document.createElement('button');
-    card.className = 'media-item';
-    card.title = item.title;
-
-    const img = document.createElement('img');
-    img.src = item.src;
-    img.alt = item.title;
-    img.loading = 'lazy';
-    card.appendChild(img);
-
-    card.addEventListener('click', () => {
-      currentMedia[sceneIndex] = item;
-      showScene(sceneIndex);
-    });
-
-    mediaGrid.appendChild(card);
-  });
-}
-
-function renderTimeline(activeIndex) {
-  timeline.innerHTML = '';
-  currentScenes.forEach((_, index) => {
-    const bar = document.createElement('span');
-    if (index <= activeIndex) bar.classList.add('active');
-    timeline.appendChild(bar);
-  });
-}
-
-function showScene(index) {
-  if (!currentScenes.length) return;
-
-  sceneIndex = index % currentScenes.length;
-  const scene = currentScenes[sceneIndex];
-  const media = currentMedia[sceneIndex % Math.max(currentMedia.length, 1)];
-
-  captionText.textContent = captionsVisible ? scene : '';
-  sceneVideo.style.display = 'none';
-  sceneVideo.pause();
-  sceneImage.src = media?.src || fallbackMedia[sceneIndex % fallbackMedia.length];
-  sceneImage.style.display = 'block';
-
-  videoStatus.textContent = `Cena ${sceneIndex + 1}/${currentScenes.length}`;
-  renderTimeline(sceneIndex);
-}
-
-function playPreview() {
-  clearInterval(sceneTimer);
-  showScene(0);
-  sceneTimer = setInterval(() => showScene(sceneIndex + 1), 4500);
-}
-
-async function generateVideo() {
-  const raw = cleanText(input.value);
-
-  if (!raw) {
-    input.focus();
-    captionText.textContent = 'Digite um tema ou cole um roteiro primeiro.';
-    setState('Aguardando texto');
-    return;
-  }
-
-  currentScript = isProbablyTheme(raw) ? createScriptFromTheme(raw) : raw;
-  currentScenes = splitIntoScenes(currentScript);
-  scriptOutput.value = currentScript;
-
-  await loadMedia();
-  setState('Prévia gerada');
-  playPreview();
-  saveProject();
-}
-
-function speakScript() {
-  if (!currentScript) currentScript = cleanText(scriptOutput.value || input.value);
-  if (!currentScript) return;
-
-  if (!('speechSynthesis' in window)) {
-    alert('Seu navegador não suporta narração automática.');
-    return;
-  }
-
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(currentScript);
-  utterance.lang = currentLang;
-  utterance.rate = 1;
-  utterance.pitch = 1;
-  window.speechSynthesis.speak(utterance);
-  setState('Narrando roteiro');
-}
-
-function toggleCaptions() {
-  captionsVisible = !captionsVisible;
-  captionBtn.textContent = captionsVisible ? 'Legendas' : 'Sem legenda';
-  showScene(sceneIndex);
-  setState(captionsVisible ? 'Legendas ativadas' : 'Legendas ocultas');
-}
-
-function getSupportedMimeType() {
-  const types = [
-    'video/webm;codecs=vp9',
-    'video/webm;codecs=vp8',
-    'video/webm'
+  const themes = [
+    ['#12002f', '#7c3cff', '#00d4ff'],
+    ['#071225', '#0066ff', '#2eff9b'],
+    ['#210018', '#ff4d8d', '#ffd166'],
+    ['#050712', '#8b5cf6', '#38bdf8']
   ];
 
-  return types.find(type => MediaRecorder.isTypeSupported(type)) || '';
-}
-
-function drawExportFrame(ctx, scene, frame, sceneNumber) {
-  const w = renderCanvas.width;
-  const h = renderCanvas.height;
-  const progress = (frame % 120) / 120;
-
-  const gradient = ctx.createLinearGradient(0, 0, w, h);
-  gradient.addColorStop(0, `hsl(${245 + sceneNumber * 28}, 85%, ${18 + progress * 6}%)`);
-  gradient.addColorStop(0.45, `hsl(${205 + sceneNumber * 18}, 90%, 12%)`);
-  gradient.addColorStop(1, '#050712');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-
-  ctx.save();
-  ctx.globalAlpha = 0.32;
-  for (let i = 0; i < 16; i++) {
-    const x = (Math.sin(frame * 0.018 + i) * 240) + 360;
-    const y = ((frame * (1.2 + i * 0.08)) + i * 110) % h;
-    ctx.beginPath();
-    ctx.arc(x, y, 2 + (i % 4), 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-  }
-  ctx.restore();
-
-  ctx.save();
-  ctx.translate(w / 2, h * 0.35);
-  ctx.rotate(frame * 0.002);
-  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-  ctx.lineWidth = 3;
-  for (let i = 0; i < 4; i++) {
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 120 + i * 55, 42 + i * 22, i * 0.45, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  const bottom = ctx.createLinearGradient(0, h * 0.45, 0, h);
-  bottom.addColorStop(0, 'rgba(0,0,0,0)');
-  bottom.addColorStop(1, 'rgba(0,0,0,0.92)');
-  ctx.fillStyle = bottom;
-  ctx.fillRect(0, 0, w, h);
-
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
-  roundRect(ctx, 52, 72, 280, 58, 29);
-  ctx.fill();
-
-  ctx.fillStyle = '#2eff9b';
-  ctx.font = 'bold 24px Arial';
-  ctx.textAlign = 'left';
-  ctx.fillText(`CENA ${sceneNumber + 1}/${currentScenes.length}`, 82, 110);
-
-  if (captionsVisible) {
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 52px Arial';
-    ctx.textAlign = 'center';
-    wrapText(ctx, scene, w / 2, h - 260, w - 90, 62);
+  function setState(message) {
+    appState.textContent = message;
+    videoStatus.textContent = message;
   }
 
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.font = '24px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('Vídeo IA Studio', w / 2, h - 72);
-}
+  function cleanText(text) {
+    return String(text || '').replace(/\s+/g, ' ').trim();
+  }
 
-function roundRect(ctx, x, y, width, height, radius) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-}
+  function createScriptFromTheme(theme) {
+    return `Você sabia que ${theme} pode virar um vídeo incrível em poucos segundos? A inteligência artificial transforma o tema em cenas, cria uma narração e adiciona legendas automáticas. Depois, o vídeo fica pronto para baixar em formato vertical.`;
+  }
 
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-  const words = cleanText(text).split(' ');
-  let line = '';
-  const lines = [];
+  function splitIntoScenes(script) {
+    const parts = cleanText(script).split(/(?<=[.!?])\s+/).filter(Boolean);
+    if (parts.length >= 4) return parts.slice(0, 4);
 
-  words.forEach(word => {
-    const testLine = `${line}${word} `;
-    if (ctx.measureText(testLine).width > maxWidth && line) {
-      lines.push(line);
-      line = `${word} `;
-    } else {
-      line = testLine;
+    const words = cleanText(script).split(' ');
+    const size = Math.max(1, Math.ceil(words.length / 4));
+    return [0, 1, 2, 3].map(i => words.slice(i * size, (i + 1) * size).join(' ')).filter(Boolean);
+  }
+
+  function buildProject() {
+    const raw = cleanText(input.value);
+    if (!raw) {
+      setState('Digite um tema primeiro');
+      captionText.textContent = 'Digite um tema ou roteiro para começar.';
+      return false;
     }
-  });
-  lines.push(line);
 
-  const finalLines = lines.slice(-5);
-  finalLines.forEach((textLine, index) => {
-    ctx.strokeStyle = 'rgba(0,0,0,0.78)';
-    ctx.lineWidth = 10;
-    ctx.strokeText(textLine.trim(), x, y + index * lineHeight);
-    ctx.fillText(textLine.trim(), x, y + index * lineHeight);
-  });
-}
-
-async function exportWebM() {
-  if (!currentScenes.length) await generateVideo();
-
-  if (!renderCanvas.captureStream || !window.MediaRecorder) {
-    alert('Seu navegador não suporta exportação de vídeo. Tente no Chrome ou Edge.');
-    return;
+    currentScript = raw.split(' ').length <= 10 ? createScriptFromTheme(raw) : raw;
+    currentScenes = splitIntoScenes(currentScript);
+    scriptOutput.value = currentScript;
+    return true;
   }
 
-  const mimeType = getSupportedMimeType();
-  if (!mimeType) {
-    alert('Formato WebM não suportado neste navegador. Tente no Chrome ou Edge.');
-    return;
+  function renderVisualCard(index) {
+    const colors = themes[(index + selectedTheme) % themes.length];
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="${colors[0]}" />
+            <stop offset="0.55" stop-color="${colors[1]}" />
+            <stop offset="1" stop-color="${colors[2]}" />
+          </linearGradient>
+          <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter>
+        </defs>
+        <rect width="720" height="1280" fill="url(#g)"/>
+        <circle cx="${160 + index * 90}" cy="260" r="150" fill="rgba(255,255,255,.18)" filter="url(#blur)"/>
+        <circle cx="560" cy="${780 - index * 80}" r="220" fill="rgba(0,0,0,.25)" filter="url(#blur)"/>
+        <g fill="rgba(255,255,255,.45)">
+          <circle cx="90" cy="160" r="4"/><circle cx="220" cy="320" r="3"/><circle cx="620" cy="210" r="5"/>
+          <circle cx="510" cy="490" r="3"/><circle cx="140" cy="710" r="4"/><circle cx="610" cy="930" r="5"/>
+        </g>
+        <text x="360" y="610" fill="white" font-size="56" font-family="Arial" font-weight="800" text-anchor="middle">Cena ${index + 1}</text>
+        <text x="360" y="680" fill="rgba(255,255,255,.8)" font-size="30" font-family="Arial" text-anchor="middle">Vídeo IA Studio</text>
+      </svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   }
 
-  setState('Gerando arquivo de vídeo...');
-  clearInterval(sceneTimer);
+  function renderMediaGrid() {
+    mediaGrid.innerHTML = '';
+    mediaSource.textContent = 'Imagens locais geradas';
 
-  const ctx = renderCanvas.getContext('2d');
-  const fps = 30;
-  const framesPerScene = 120;
-  const totalFrames = currentScenes.length * framesPerScene;
-  let frame = 0;
+    [0, 1, 2, 3, 4, 5].forEach(i => {
+      const btn = document.createElement('button');
+      btn.className = 'media-item';
+      btn.type = 'button';
+      const img = document.createElement('img');
+      img.src = renderVisualCard(i);
+      img.alt = `Mídia ${i + 1}`;
+      btn.appendChild(img);
+      btn.addEventListener('click', () => {
+        selectedTheme = i;
+        showScene(sceneIndex);
+        setState(`Mídia ${i + 1} selecionada`);
+      });
+      mediaGrid.appendChild(btn);
+    });
+  }
 
-  drawExportFrame(ctx, currentScenes[0], 0, 0);
+  function renderTimeline() {
+    timeline.innerHTML = '';
+    currentScenes.forEach((_, i) => {
+      const span = document.createElement('span');
+      if (i <= sceneIndex) span.classList.add('active');
+      timeline.appendChild(span);
+    });
+  }
 
-  const stream = renderCanvas.captureStream(fps);
-  const recorder = new MediaRecorder(stream, { mimeType });
-  const chunks = [];
+  function showScene(index) {
+    if (!currentScenes.length) return;
+    sceneIndex = index % currentScenes.length;
+    sceneVideo.style.display = 'none';
+    sceneImage.style.display = 'block';
+    sceneImage.src = renderVisualCard(sceneIndex);
+    captionText.textContent = captionsVisible ? currentScenes[sceneIndex] : '';
+    videoStatus.textContent = `Cena ${sceneIndex + 1}/${currentScenes.length}`;
+    renderTimeline();
+  }
 
-  recorder.ondataavailable = event => {
-    if (event.data && event.data.size > 0) chunks.push(event.data);
-  };
+  function playPreview() {
+    clearInterval(sceneTimer);
+    showScene(0);
+    sceneTimer = setInterval(() => showScene(sceneIndex + 1), 3500);
+  }
 
-  recorder.onerror = () => {
-    setState('Erro ao exportar');
-    alert('Erro ao gerar vídeo. Tente novamente no Chrome.');
-  };
-
-  recorder.onstop = () => {
-    const blob = new Blob(chunks, { type: mimeType });
-    if (!blob.size) {
-      setState('Arquivo vazio');
-      alert('O vídeo saiu vazio. Tente novamente no Chrome ou Edge.');
+  function generateVideo() {
+    try {
+      if (!buildProject()) return;
+      renderMediaGrid();
       playPreview();
+      setState('Prévia gerada');
+      localStorage.setItem('videoIAStudioText', input.value);
+    } catch (error) {
+      setState('Erro ao gerar');
+      captionText.textContent = `Erro: ${error.message}`;
+    }
+  }
+
+  function speakScript() {
+    if (!currentScript && !buildProject()) return;
+    if (!('speechSynthesis' in window)) {
+      alert('Este navegador não suporta narração automática.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const voice = new SpeechSynthesisUtterance(currentScript);
+    voice.lang = currentLang;
+    voice.rate = 1;
+    window.speechSynthesis.speak(voice);
+    setState('Narrando');
+  }
+
+  function toggleCaptions() {
+    captionsVisible = !captionsVisible;
+    captionBtn.textContent = captionsVisible ? 'Legendas' : 'Sem legenda';
+    showScene(sceneIndex);
+    setState(captionsVisible ? 'Legendas ligadas' : 'Legendas desligadas');
+  }
+
+  function drawFrame(ctx, frame) {
+    const scene = Math.floor(frame / 90) % currentScenes.length;
+    const colors = themes[(scene + selectedTheme) % themes.length];
+    const w = renderCanvas.width;
+    const h = renderCanvas.height;
+    const p = (frame % 90) / 90;
+
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, colors[0]);
+    grad.addColorStop(0.55, colors[1]);
+    grad.addColorStop(1, colors[2]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(160 + scene * 90 + p * 80, 300, 150, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(560 - p * 120, 790 - scene * 40, 220, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = 'rgba(0,0,0,.55)';
+    ctx.fillRect(0, h * 0.58, w, h * 0.42);
+
+    ctx.fillStyle = '#2eff9b';
+    ctx.font = 'bold 28px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(`CENA ${scene + 1}/${currentScenes.length}`, 52, 94);
+
+    if (captionsVisible) {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 52px Arial';
+      ctx.textAlign = 'center';
+      wrapText(ctx, currentScenes[scene], w / 2, h - 280, w - 80, 62);
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,.78)';
+    ctx.font = '26px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Vídeo IA Studio', w / 2, h - 70);
+  }
+
+  function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+    const words = cleanText(text).split(' ');
+    let line = '';
+    const lines = [];
+    words.forEach(word => {
+      const test = line + word + ' ';
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = word + ' ';
+      } else {
+        line = test;
+      }
+    });
+    lines.push(line);
+    lines.slice(-5).forEach((l, i) => {
+      ctx.strokeStyle = 'rgba(0,0,0,.8)';
+      ctx.lineWidth = 10;
+      ctx.strokeText(l.trim(), x, y + i * lineHeight);
+      ctx.fillText(l.trim(), x, y + i * lineHeight);
+    });
+  }
+
+  function exportVideo() {
+    if (!currentScenes.length && !buildProject()) return;
+    if (!window.MediaRecorder || !renderCanvas.captureStream) {
+      alert('Exportação não suportada neste navegador. Use Chrome ou Edge.');
       return;
     }
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'video-ia-studio.webm';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    setState('Vídeo exportado');
-    playPreview();
-  };
+    const type = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' : 'video/webm';
+    const stream = renderCanvas.captureStream(30);
+    const recorder = new MediaRecorder(stream, { mimeType: type });
+    const chunks = [];
+    const ctx = renderCanvas.getContext('2d');
+    let frame = 0;
+    const total = Math.max(1, currentScenes.length) * 90;
 
-  recorder.start(250);
+    setState('Exportando vídeo...');
+    clearInterval(sceneTimer);
 
-  const exportTimer = setInterval(() => {
-    const activeScene = Math.floor(frame / framesPerScene) % currentScenes.length;
-    drawExportFrame(ctx, currentScenes[activeScene], frame, activeScene);
-    frame++;
+    recorder.ondataavailable = e => {
+      if (e.data.size) chunks.push(e.data);
+    };
 
-    if (frame >= totalFrames) {
-      clearInterval(exportTimer);
-      recorder.stop();
-    }
-  }, 1000 / fps);
-}
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'video-ia-studio.webm';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setState('Vídeo baixado');
+      playPreview();
+    };
 
-function saveProject() {
-  localStorage.setItem('videoIAStudioProject', JSON.stringify({
-    input: input.value,
-    script: currentScript,
-    captionsVisible,
-    lang: currentLang
-  }));
-}
-
-function loadProject() {
-  const saved = localStorage.getItem('videoIAStudioProject');
-  if (!saved) return false;
-
-  try {
-    const project = JSON.parse(saved);
-    input.value = project.input || input.value;
-    currentScript = project.script || '';
-    captionsVisible = project.captionsVisible ?? true;
-    currentLang = project.lang || 'pt-BR';
-    languageBtn.textContent = currentLang;
-    if (currentScript) scriptOutput.value = currentScript;
-    return true;
-  } catch {
-    return false;
+    recorder.start();
+    const timer = setInterval(() => {
+      drawFrame(ctx, frame);
+      frame++;
+      if (frame >= total) {
+        clearInterval(timer);
+        recorder.stop();
+      }
+    }, 1000 / 30);
   }
-}
 
-function showTab(tab) {
-  document.querySelectorAll('.bottom-nav button').forEach(button => {
-    button.classList.toggle('active', button.dataset.tab === tab);
-  });
-
-  const messages = {
-    home: 'Tela inicial',
-    projects: 'Projeto salvo no navegador',
-    voices: `Voz ativa: ${currentLang}`,
-    settings: 'Configurações locais'
-  };
-  setState(messages[tab] || 'IA pronta');
-}
-
-function toggleLanguage() {
-  currentLang = currentLang === 'pt-BR' ? 'en-US' : 'pt-BR';
-  languageBtn.textContent = currentLang;
-  saveProject();
-  setState(`Idioma: ${currentLang}`);
-}
-
-generateBtn.addEventListener('click', generateVideo);
-mediaBtn.addEventListener('click', loadMedia);
-voiceBtn.addEventListener('click', speakScript);
-captionBtn.addEventListener('click', toggleCaptions);
-exportBtn.addEventListener('click', exportWebM);
-copyBtn.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(scriptOutput.value);
-    setState('Roteiro copiado');
-  } catch {
+  function copyScript() {
     scriptOutput.select();
-    setState('Selecione e copie o roteiro');
+    document.execCommand('copy');
+    setState('Roteiro copiado');
   }
+
+  function toggleLanguage() {
+    currentLang = currentLang === 'pt-BR' ? 'en-US' : 'pt-BR';
+    languageBtn.textContent = currentLang;
+    setState(`Idioma: ${currentLang}`);
+  }
+
+  function showTab(tab) {
+    document.querySelectorAll('.bottom-nav button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    setState(tab === 'projects' ? 'Projeto salvo localmente' : tab === 'voices' ? `Voz: ${currentLang}` : tab === 'settings' ? 'Ajustes locais' : 'Tela inicial');
+  }
+
+  generateBtn.addEventListener('click', generateVideo);
+  mediaBtn.addEventListener('click', () => { renderMediaGrid(); setState('Mídias geradas'); });
+  voiceBtn.addEventListener('click', speakScript);
+  captionBtn.addEventListener('click', toggleCaptions);
+  exportBtn.addEventListener('click', exportVideo);
+  copyBtn.addEventListener('click', copyScript);
+  languageBtn.addEventListener('click', toggleLanguage);
+  document.getElementById('featureMedia').addEventListener('click', () => { renderMediaGrid(); setState('Mídias geradas'); });
+  document.getElementById('featureVoice').addEventListener('click', speakScript);
+  document.getElementById('featureCaptions').addEventListener('click', toggleCaptions);
+  document.getElementById('featureExport').addEventListener('click', exportVideo);
+  document.querySelectorAll('.bottom-nav button').forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
+
+  input.value = localStorage.getItem('videoIAStudioText') || 'Mistérios do universo que a ciência ainda não conseguiu explicar';
+  renderMediaGrid();
+  generateVideo();
 });
-languageBtn.addEventListener('click', toggleLanguage);
-
-document.getElementById('featureMedia').addEventListener('click', loadMedia);
-document.getElementById('featureVoice').addEventListener('click', speakScript);
-document.getElementById('featureCaptions').addEventListener('click', toggleCaptions);
-document.getElementById('featureExport').addEventListener('click', exportWebM);
-
-document.querySelectorAll('.bottom-nav button').forEach(button => {
-  button.addEventListener('click', () => showTab(button.dataset.tab));
-});
-
-if (!loadProject()) {
-  input.value = 'Mistérios do universo que a ciência ainda não conseguiu explicar';
-}
-
-generateVideo();
