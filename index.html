@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vídeo IA Studio</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
   <main class="app-shell">
@@ -14,7 +14,7 @@
           <p class="eyebrow" id="appState">IA pronta</p>
           <h1>Vídeo IA Studio</h1>
         </div>
-        <button class="chip" id="languageBtn">PT-BR</button>
+        <button class="chip" id="languageBtn" type="button">PT-BR</button>
       </header>
 
       <section class="hero-card">
@@ -22,28 +22,28 @@
         <textarea id="scriptInput" placeholder="Ex: Crie um vídeo sobre buracos negros em 30 segundos..."></textarea>
 
         <div class="actions wrap">
-          <button id="generateBtn" class="primary">Gerar vídeo com IA</button>
-          <button id="mediaBtn" class="secondary">Mídias</button>
-          <button id="voiceBtn" class="secondary">Narrar</button>
-          <button id="captionBtn" class="secondary">Legendas</button>
-          <button id="exportBtn" class="secondary">Exportar</button>
+          <button id="generateBtn" class="primary" type="button">Gerar vídeo com IA</button>
+          <button id="mediaBtn" class="secondary" type="button">Mídias</button>
+          <button id="voiceBtn" class="secondary" type="button">Narrar</button>
+          <button id="captionBtn" class="secondary" type="button">Legendas</button>
+          <button id="exportBtn" class="secondary" type="button">Exportar</button>
         </div>
       </section>
 
       <section class="status-grid">
-        <button class="feature-card" id="featureMedia">
+        <button class="feature-card" id="featureMedia" type="button">
           <span>🌐</span>
-          <p>Buscar imagens e vídeos grátis</p>
+          <p>Gerar imagens grátis</p>
         </button>
-        <button class="feature-card" id="featureVoice">
+        <button class="feature-card" id="featureVoice" type="button">
           <span>🎙️</span>
           <p>Criar narração grátis</p>
         </button>
-        <button class="feature-card" id="featureCaptions">
+        <button class="feature-card" id="featureCaptions" type="button">
           <span>💬</span>
           <p>Legendas automáticas</p>
         </button>
-        <button class="feature-card" id="featureExport">
+        <button class="feature-card" id="featureExport" type="button">
           <span>📲</span>
           <p>Exportar vídeo WebM</p>
         </button>
@@ -56,8 +56,8 @@
         </div>
 
         <div class="video-frame" id="videoFrame">
-          <img id="sceneImage" alt="Imagem da cena" crossorigin="anonymous" />
-          <video id="sceneVideo" muted loop playsinline crossorigin="anonymous"></video>
+          <img id="sceneImage" alt="Imagem da cena" />
+          <video id="sceneVideo" muted loop playsinline></video>
           <div class="gradient"></div>
           <div class="caption" id="captionText">Digite um tema para gerar o vídeo.</div>
         </div>
@@ -69,7 +69,7 @@
       <section class="script-output">
         <div class="section-title">
           <h2>Roteiro e legendas</h2>
-          <button id="copyBtn" class="mini-btn">Copiar</button>
+          <button id="copyBtn" class="mini-btn" type="button">Copiar</button>
         </div>
         <textarea id="scriptOutput" class="output-area">Seu roteiro aparecerá aqui.</textarea>
       </section>
@@ -77,20 +77,20 @@
       <section class="script-output media-panel">
         <div class="section-title">
           <h2>Mídias encontradas</h2>
-          <span id="mediaSource">Wikimedia Commons</span>
+          <span id="mediaSource">Imagens locais</span>
         </div>
         <div id="mediaGrid" class="media-grid"></div>
       </section>
 
       <nav class="bottom-nav">
-        <button class="active" data-tab="home">Início</button>
-        <button data-tab="projects">Projetos</button>
-        <button data-tab="voices">Vozes</button>
-        <button data-tab="settings">Ajustes</button>
+        <button class="active" data-tab="home" type="button">Início</button>
+        <button data-tab="projects" type="button">Projetos</button>
+        <button data-tab="voices" type="button">Vozes</button>
+        <button data-tab="settings" type="button">Ajustes</button>
       </nav>
     </section>
   </main>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
