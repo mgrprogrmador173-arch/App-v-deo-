@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const mediaSource = document.getElementById('mediaSource');
   const renderCanvas = document.getElementById('renderCanvas');
 
+  const PEXELS_API_KEY = 'pWIQG969OLwWzU0jQENDVlnbCLFzf0nnMvNTdL5RuwQOBRdmK2Wctb5q';
+
   let currentScript = '';
   let currentScenes = [];
   let currentMedia = [];
@@ -99,6 +101,57 @@ document.addEventListener('DOMContentLoaded', () => {
       .split(' ')
       .filter(w => w.length > 3 && !stop.includes(w));
     return words.slice(0, 4).join(' ') || 'technology space';
+  }
+
+  async function searchPexelsPhotos(query) {
+    const params = new URLSearchParams({ query, per_page: '12', orientation: 'portrait' });
+    const response = await fetch(`https://api.pexels.com/v1/search?${params}`, {
+      headers: { Authorization: PEXELS_API_KEY }
+    });
+    if (!response.ok) throw new Error('Falha no Pexels fotos');
+    const data = await response.json();
+    return (data.photos || []).map(photo => ({
+      type: 'image',
+      src: photo.src?.portrait || photo.src?.large || photo.src?.original,
+      title: photo.alt || photo.photographer || 'Pexels foto',
+      provider: 'Pexels Fotos'
+    })).filter(item => item.src);
+  }
+
+  async function searchPexelsVideos(query) {
+    const params = new URLSearchParams({ query, per_page: '12', orientation: 'portrait' });
+    const response = await fetch(`https://api.pexels.com/videos/search?${params}`, {
+      headers: { Authorization: PEXELS_API_KEY }
+    });
+    if (!response.ok) throw new Error('Falha no Pexels vídeos');
+    const data = await response.json();
+    return (data.videos || []).map(video => {
+      const files = video.video_files || [];
+      const vertical = files
+        .filter(file => file.link && file.width && file.height && file.height >= file.width)
+        .sort((a, b) => (a.width || 0) - (b.width || 0))[0];
+      const any = files.find(file => file.link);
+      const file = vertical || any;
+      if (!file?.link) return null;
+      return {
+        type: 'video',
+        src: file.link,
+        poster: video.image,
+        title: video.user?.name || 'Pexels vídeo',
+        provider: 'Pexels Vídeos'
+      };
+    }).filter(Boolean);
+  }
+
+  async function searchPexelsMixed(query) {
+    const [videos, photos] = await Promise.allSettled([
+      searchPexelsVideos(query),
+      searchPexelsPhotos(query)
+    ]);
+    return [
+      ...(videos.status === 'fulfilled' ? videos.value : []),
+      ...(photos.status === 'fulfilled' ? photos.value : [])
+    ];
   }
 
   async function searchWikimedia(query) {
@@ -177,7 +230,10 @@ document.addEventListener('DOMContentLoaded', () => {
   async function preloadImages() {
     setState('Pré-carregando imagens...');
     loadedImages = await Promise.all(
-      currentMedia.slice(0, Math.max(1, currentScenes.length)).map((item, index) => loadImageSafe(item.src, index))
+      currentMedia.slice(0, Math.max(1, currentScenes.length)).map((item, index) => {
+        const src = item.type === 'video' ? item.poster || renderVisualCard(index) : item.src;
+        return loadImageSafe(src, index);
+      })
     );
     setState('Imagens prontas');
   }
@@ -188,7 +244,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setState('Buscando mídias grátis...');
 
     const attempts = [];
-    if (provider === 'auto') attempts.push(searchOpenverse, searchNasa, searchWikimedia);
+    if (provider === 'auto') attempts.push(searchPexelsMixed, searchPexelsPhotos, searchNasa, searchWikimedia, searchOpenverse);
+    if (provider === 'pexels') attempts.push(searchPexelsMixed);
+    if (provider === 'pexels-videos') attempts.push(searchPexelsVideos, searchPexelsPhotos);
+    if (provider === 'pexels-photos') attempts.push(searchPexelsPhotos);
     if (provider === 'openverse') attempts.push(searchOpenverse);
     if (provider === 'nasa') attempts.push(searchNasa);
     if (provider === 'wikimedia') attempts.push(searchWikimedia);
@@ -231,16 +290,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const btn = document.createElement('button');
       btn.className = 'media-item';
       btn.type = 'button';
-      const img = document.createElement('img');
-      img.crossOrigin = 'anonymous';
-      img.referrerPolicy = 'no-referrer';
-      img.src = item.src;
-      img.alt = item.title || `Mídia ${i + 1}`;
-      img.onerror = () => { img.src = renderVisualCard(i); };
-      btn.appendChild(img);
+      if (item.type === 'video') {
+        const video = document.createElement('video');
+        video.src = item.src;
+        video.poster = item.poster || '';
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.crossOrigin = 'anonymous';
+        video.addEventListener('mouseenter', () => video.play().catch(() => null));
+        video.addEventListener('touchstart', () => video.play().catch(() => null));
+        btn.appendChild(video);
+      } else {
+        const img = document.createElement('img');
+        img.crossOrigin = 'anonymous';
+        img.referrerPolicy = 'no-referrer';
+        img.src = item.src;
+        img.alt = item.title || `Mídia ${i + 1}`;
+        img.onerror = () => { img.src = renderVisualCard(i); };
+        btn.appendChild(img);
+      }
       btn.addEventListener('click', async () => {
         currentMedia[sceneIndex] = item;
-        loadedImages[sceneIndex] = await loadImageSafe(item.src, sceneIndex);
+        loadedImages[sceneIndex] = await loadImageSafe(item.type === 'video' ? item.poster || renderVisualCard(sceneIndex) : item.src, sceneIndex);
         showScene(sceneIndex);
         setState(`Mídia ${i + 1} selecionada`);
       });
@@ -274,12 +346,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!currentScenes.length) return;
     sceneIndex = index % currentScenes.length;
     const item = currentMedia[sceneIndex % Math.max(1, currentMedia.length)] || localMediaList()[sceneIndex];
+    sceneImage.style.display = 'none';
     sceneVideo.style.display = 'none';
-    sceneImage.style.display = 'block';
-    sceneImage.crossOrigin = 'anonymous';
-    sceneImage.referrerPolicy = 'no-referrer';
-    sceneImage.onerror = () => { sceneImage.src = renderVisualCard(sceneIndex); };
-    sceneImage.src = item.src;
+    sceneVideo.pause();
+
+    if (item.type === 'video') {
+      sceneVideo.crossOrigin = 'anonymous';
+      sceneVideo.src = item.src;
+      sceneVideo.poster = item.poster || '';
+      sceneVideo.style.display = 'block';
+      sceneVideo.play().catch(() => {
+        sceneImage.src = item.poster || renderVisualCard(sceneIndex);
+        sceneImage.style.display = 'block';
+        sceneVideo.style.display = 'none';
+      });
+    } else {
+      sceneImage.crossOrigin = 'anonymous';
+      sceneImage.referrerPolicy = 'no-referrer';
+      sceneImage.onerror = () => { sceneImage.src = renderVisualCard(sceneIndex); };
+      sceneImage.src = item.src;
+      sceneImage.style.display = 'block';
+    }
+
     captionText.textContent = captionsVisible ? currentScenes[sceneIndex] : '';
     videoStatus.textContent = `Cena ${sceneIndex + 1}/${currentScenes.length}`;
     renderTimeline();
