@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vídeo IA Studio</title>
-  <link rel="stylesheet" href="style.css?v=9" />
+  <link rel="stylesheet" href="style.css?v=10" />
 </head>
 <body>
   <main class="app-shell">
@@ -69,7 +69,7 @@
           <audio id="audioPreview" controls></audio>
         </div>
 
-        <p class="note">Correções aplicadas: CORS em imagens, preload/cache, fallback visual, Pexels API, exportação WebM com áudio enviado ou gerado por endpoint TTS. A voz do botão Narrar grátis é só prévia e não entra no arquivo.</p>
+        <p class="note">Correção: exibição normal para mídias externas e CORS apenas no preload/exportação. Se Pexels falhar, o app tenta outras fontes e depois visual local.</p>
 
         <div class="actions wrap">
           <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
@@ -108,8 +108,8 @@
         </div>
 
         <div class="video-frame" id="videoFrame">
-          <img id="sceneImage" alt="Imagem da cena" crossorigin="anonymous" />
-          <video id="sceneVideo" muted loop playsinline crossorigin="anonymous"></video>
+          <img id="sceneImage" alt="Imagem da cena" />
+          <video id="sceneVideo" muted loop playsinline></video>
           <div class="gradient"></div>
           <div class="caption" id="captionText">Digite um tema para gerar o vídeo.</div>
         </div>
@@ -143,6 +143,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
