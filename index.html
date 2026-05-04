@@ -39,6 +39,7 @@
               <option value="pexels-videos">Pexels vídeos</option>
               <option value="pexels-photos">Pexels fotos</option>
               <option value="wikimedia">Wikimedia grátis</option>
+              <option value="openverse">Openverse grátis</option>
               <option value="nasa">NASA grátis</option>
               <option value="local">Visual local</option>
             </select>
@@ -47,17 +48,15 @@
 
         <div class="audio-tools">
           <label>
-            Chave Pexels API
-            <input id="pexelsKeyInput" type="url" placeholder="Cole sua chave Pexels aqui" />
-          </label>
-          <label>
             Narração MP3 local
             <input id="audioInput" type="file" accept="audio/*" />
           </label>
+
           <label>
             Endpoint TTS opcional
             <input id="ttsEndpoint" type="url" placeholder="https://seu-backend.com/api/tts" />
           </label>
+
           <label>
             Voz TTS
             <select id="ttsVoice">
@@ -66,10 +65,11 @@
               <option value="en-US-JennyNeural">Jenny EN-US</option>
             </select>
           </label>
+
           <audio id="audioPreview" controls></audio>
         </div>
 
-        <p class="note">A chave Pexels fica salva só no navegador. Se a busca externa falhar, o app usa visual local automaticamente.</p>
+        <p class="note">Correção em andamento: app restaurado para script funcional. Se a busca externa falhar, use Visual local enquanto ajustamos Pexels.</p>
 
         <div class="actions wrap">
           <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
@@ -83,7 +83,7 @@
       </section>
 
       <section class="status-grid">
-        <button class="feature-card" id="featureMedia" type="button"><span>🌐</span><p>Pexels, Wikimedia e NASA</p></button>
+        <button class="feature-card" id="featureMedia" type="button"><span>🌐</span><p>Pexels, Wikimedia, Openverse e NASA</p></button>
         <button class="feature-card" id="featureVoice" type="button"><span>🎙️</span><p>Narração local ou endpoint TTS</p></button>
         <button class="feature-card" id="featureCaptions" type="button"><span>💬</span><p>Legendas automáticas</p></button>
         <button class="feature-card" id="featureExport" type="button"><span>📲</span><p>Exportar WebM</p></button>
@@ -120,6 +120,6 @@
     </section>
   </main>
 
-  <script src="app2.js?v=1"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
