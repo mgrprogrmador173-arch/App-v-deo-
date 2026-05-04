@@ -23,7 +23,7 @@ body {
   color: var(--text);
 }
 
-button, textarea, select { font: inherit; }
+button, textarea, select, input { font: inherit; }
 button { border: 0; cursor: pointer; }
 
 .app-shell {
@@ -87,7 +87,7 @@ label {
   margin-bottom: 10px;
 }
 
-textarea, select {
+textarea, select, input[type="url"], input[type="file"] {
   width: 100%;
   color: var(--text);
   background: rgba(255, 255, 255, 0.08);
@@ -97,15 +97,28 @@ textarea, select {
   outline: none;
 }
 
-select { margin-top: 8px; }
+select, input { margin-top: 8px; }
 textarea { min-height: 120px; resize: vertical; }
-textarea:focus, select:focus { border-color: var(--secondary); }
+textarea:focus, select:focus, input:focus { border-color: var(--secondary); }
 
-.control-grid {
+.control-grid, .audio-tools {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 12px;
+}
+
+.audio-tools {
+  grid-template-columns: 1fr;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 12px;
+}
+
+audio {
+  width: 100%;
+  min-height: 40px;
 }
 
 .note {
@@ -132,6 +145,10 @@ textarea:focus, select:focus { border-color: var(--secondary); }
 .secondary {
   flex: 1 1 45%;
   background: var(--panel-strong);
+}
+
+.important {
+  background: linear-gradient(135deg, #ff4d8d, #7c3cff);
 }
 
 .status-grid {
