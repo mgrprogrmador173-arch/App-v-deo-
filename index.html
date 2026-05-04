@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vídeo IA Studio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section class="phone">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">IA pronta</p>
+          <h1>Vídeo IA Studio</h1>
+        </div>
+        <button class="chip">PT-BR</button>
+      </header>
+
+      <section class="hero-card">
+        <label for="scriptInput">Roteiro ou tema</label>
+        <textarea id="scriptInput" placeholder="Ex: Crie um vídeo sobre buracos negros em 30 segundos..."></textarea>
+        <div class="actions">
+          <button id="generateBtn" class="primary">Gerar vídeo com IA</button>
+          <button id="voiceBtn" class="secondary">Narrar</button>
+        </div>
+      </section>
+
+      <section class="status-grid">
+        <article>
+          <span>🌐</span>
+          <p>Buscar imagens online</p>
+        </article>
+        <article>
+          <span>🎙️</span>
+          <p>Criar narração</p>
+        </article>
+        <article>
+          <span>💬</span>
+          <p>Legendas automáticas</p>
+        </article>
+        <article>
+          <span>📲</span>
+          <p>Exportar vídeo</p>
+        </article>
+      </section>
+
+      <section class="preview-card">
+        <div class="preview-header">
+          <p>Prévia 9:16</p>
+          <span id="videoStatus">Aguardando roteiro</span>
+        </div>
+        <div class="video-frame" id="videoFrame">
+          <img id="sceneImage" alt="Imagem da cena" />
+          <div class="gradient"></div>
+          <div class="caption" id="captionText">Digite um tema para gerar o vídeo.</div>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </section>
+
+      <section class="script-output">
+        <h2>Roteiro gerado</h2>
+        <p id="scriptOutput">Seu roteiro aparecerá aqui.</p>
+      </section>
+
+      <nav class="bottom-nav">
+        <button class="active">Início</button>
+        <button>Projetos</button>
+        <button>Vozes</button>
+        <button>Ajustes</button>
+      </nav>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
