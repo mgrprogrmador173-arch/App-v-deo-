@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vídeo IA Studio</title>
-  <link rel="stylesheet" href="style.css?v=10" />
+  <link rel="stylesheet" href="style.css?v=11" />
 </head>
 <body>
   <main class="app-shell">
@@ -39,7 +39,6 @@
               <option value="pexels-videos">Pexels vídeos</option>
               <option value="pexels-photos">Pexels fotos</option>
               <option value="wikimedia">Wikimedia grátis</option>
-              <option value="openverse">Openverse grátis</option>
               <option value="nasa">NASA grátis</option>
               <option value="local">Visual local</option>
             </select>
@@ -48,15 +47,17 @@
 
         <div class="audio-tools">
           <label>
+            Chave Pexels API
+            <input id="pexelsKeyInput" type="url" placeholder="Cole sua chave Pexels aqui" />
+          </label>
+          <label>
             Narração MP3 local
             <input id="audioInput" type="file" accept="audio/*" />
           </label>
-
           <label>
             Endpoint TTS opcional
             <input id="ttsEndpoint" type="url" placeholder="https://seu-backend.com/api/tts" />
           </label>
-
           <label>
             Voz TTS
             <select id="ttsVoice">
@@ -65,11 +66,10 @@
               <option value="en-US-JennyNeural">Jenny EN-US</option>
             </select>
           </label>
-
           <audio id="audioPreview" controls></audio>
         </div>
 
-        <p class="note">Correção: exibição normal para mídias externas e CORS apenas no preload/exportação. Se Pexels falhar, o app tenta outras fontes e depois visual local.</p>
+        <p class="note">A chave Pexels fica salva só no navegador. Se a busca externa falhar, o app usa visual local automaticamente.</p>
 
         <div class="actions wrap">
           <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
@@ -83,54 +83,31 @@
       </section>
 
       <section class="status-grid">
-        <button class="feature-card" id="featureMedia" type="button">
-          <span>🌐</span>
-          <p>Pexels, Wikimedia, Openverse e NASA</p>
-        </button>
-        <button class="feature-card" id="featureVoice" type="button">
-          <span>🎙️</span>
-          <p>Narração local ou endpoint TTS</p>
-        </button>
-        <button class="feature-card" id="featureCaptions" type="button">
-          <span>💬</span>
-          <p>Legendas automáticas</p>
-        </button>
-        <button class="feature-card" id="featureExport" type="button">
-          <span>📲</span>
-          <p>Exportar WebM com ou sem áudio</p>
-        </button>
+        <button class="feature-card" id="featureMedia" type="button"><span>🌐</span><p>Pexels, Wikimedia e NASA</p></button>
+        <button class="feature-card" id="featureVoice" type="button"><span>🎙️</span><p>Narração local ou endpoint TTS</p></button>
+        <button class="feature-card" id="featureCaptions" type="button"><span>💬</span><p>Legendas automáticas</p></button>
+        <button class="feature-card" id="featureExport" type="button"><span>📲</span><p>Exportar WebM</p></button>
       </section>
 
       <section class="preview-card">
-        <div class="preview-header">
-          <p>Prévia 9:16</p>
-          <span id="videoStatus">Aguardando roteiro</span>
-        </div>
-
+        <div class="preview-header"><p>Prévia 9:16</p><span id="videoStatus">Aguardando roteiro</span></div>
         <div class="video-frame" id="videoFrame">
           <img id="sceneImage" alt="Imagem da cena" />
           <video id="sceneVideo" muted loop playsinline></video>
           <div class="gradient"></div>
           <div class="caption" id="captionText">Digite um tema para gerar o vídeo.</div>
         </div>
-
         <canvas id="renderCanvas" width="720" height="1280"></canvas>
         <div class="timeline" id="timeline"></div>
       </section>
 
       <section class="script-output">
-        <div class="section-title">
-          <h2>Roteiro gerado</h2>
-          <button id="copyBtn" class="mini-btn" type="button">Copiar</button>
-        </div>
+        <div class="section-title"><h2>Roteiro gerado</h2><button id="copyBtn" class="mini-btn" type="button">Copiar</button></div>
         <textarea id="scriptOutput" class="output-area">Seu roteiro aparecerá aqui.</textarea>
       </section>
 
       <section class="script-output media-panel">
-        <div class="section-title">
-          <h2>Mídias encontradas</h2>
-          <span id="mediaSource">Automático grátis</span>
-        </div>
+        <div class="section-title"><h2>Mídias encontradas</h2><span id="mediaSource">Automático grátis</span></div>
         <div id="mediaGrid" class="media-grid"></div>
       </section>
 
@@ -143,6 +120,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=10"></script>
+  <script src="app2.js?v=1"></script>
 </body>
 </html>
