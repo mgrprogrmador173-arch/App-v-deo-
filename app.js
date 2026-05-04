@@ -107,13 +107,37 @@ document.addEventListener('DOMContentLoaded', () => {
       format: 'json'
     });
     const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`);
-    if (!response.ok) throw new Error('Falha ao buscar imagens');
+    if (!response.ok) throw new Error('Falha no Wikimedia');
     const data = await response.json();
     const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
     return pages.map(page => {
       const info = page.imageinfo?.[0];
       if (!info || !info.mime?.startsWith('image')) return null;
-      return { type: 'image', src: info.thumburl || info.url, title: page.title };
+      return { type: 'image', src: info.thumburl || info.url, title: page.title, provider: 'Wikimedia' };
+    }).filter(Boolean);
+  }
+
+  async function searchOpenverse(query) {
+    const params = new URLSearchParams({ q: query, page_size: '12', mature: 'false' });
+    const response = await fetch(`https://api.openverse.org/v1/images/?${params}`);
+    if (!response.ok) throw new Error('Falha no Openverse');
+    const data = await response.json();
+    return (data.results || []).map(item => {
+      const src = item.thumbnail || item.url;
+      if (!src) return null;
+      return { type: 'image', src, title: item.title || 'Openverse', provider: 'Openverse' };
+    }).filter(Boolean);
+  }
+
+  async function searchNasa(query) {
+    const params = new URLSearchParams({ q: query, media_type: 'image' });
+    const response = await fetch(`https://images-api.nasa.gov/search?${params}`);
+    if (!response.ok) throw new Error('Falha na NASA');
+    const data = await response.json();
+    return (data.collection?.items || []).slice(0, 12).map(item => {
+      const link = (item.links || []).find(l => l.render === 'image' || l.href);
+      if (!link?.href) return null;
+      return { type: 'image', src: link.href, title: item.data?.[0]?.title || 'NASA', provider: 'NASA' };
     }).filter(Boolean);
   }
 
@@ -124,30 +148,47 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function localMediaList() {
-    return Array.from({ length: Math.max(6, sceneCountByDuration()) }, (_, i) => ({ type: 'image', src: renderVisualCard(i), title: `Visual ${i + 1}` }));
+    return Array.from({ length: Math.max(6, sceneCountByDuration()) }, (_, i) => ({ type: 'image', src: renderVisualCard(i), title: `Visual ${i + 1}`, provider: 'Visual local' }));
   }
 
   async function loadMedia() {
     const provider = mediaProvider.value;
     const query = extractKeywords(input.value || currentScript);
-    setState(provider === 'wikimedia' ? 'Buscando imagens grátis...' : 'Gerando visuais locais...');
+    setState('Buscando mídias grátis...');
 
-    if (provider === 'wikimedia') {
-      try {
-        const found = await searchWikimedia(query);
-        currentMedia = found.length ? found : localMediaList();
-        mediaSource.textContent = found.length ? 'Wikimedia grátis' : 'Visual local';
-      } catch (error) {
-        currentMedia = localMediaList();
-        mediaSource.textContent = 'Visual local';
-      }
-    } else {
+    const attempts = [];
+    if (provider === 'auto') attempts.push(searchOpenverse, searchNasa, searchWikimedia);
+    if (provider === 'openverse') attempts.push(searchOpenverse);
+    if (provider === 'nasa') attempts.push(searchNasa);
+    if (provider === 'wikimedia') attempts.push(searchWikimedia);
+
+    if (provider === 'local') {
       currentMedia = localMediaList();
       mediaSource.textContent = 'Visual local';
+      renderMediaGrid();
+      setState('Mídias locais prontas');
+      return;
     }
 
+    for (const search of attempts) {
+      try {
+        const found = await search(query);
+        if (found.length) {
+          currentMedia = found;
+          mediaSource.textContent = found[0].provider || 'Fonte grátis';
+          renderMediaGrid();
+          setState(`Mídias prontas: ${mediaSource.textContent}`);
+          return;
+        }
+      } catch (error) {
+        console.warn(error.message);
+      }
+    }
+
+    currentMedia = localMediaList();
+    mediaSource.textContent = 'Visual local';
     renderMediaGrid();
-    setState('Mídias prontas');
+    setState('Mídias locais prontas');
   }
 
   function renderMediaGrid() {
@@ -159,6 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const img = document.createElement('img');
       img.src = item.src;
       img.alt = item.title || `Mídia ${i + 1}`;
+      img.referrerPolicy = 'no-referrer';
+      img.onerror = () => { img.src = renderVisualCard(i); };
       btn.appendChild(img);
       btn.addEventListener('click', () => {
         currentMedia[sceneIndex] = item;
@@ -197,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = currentMedia[sceneIndex % Math.max(1, currentMedia.length)] || localMediaList()[sceneIndex];
     sceneVideo.style.display = 'none';
     sceneImage.style.display = 'block';
+    sceneImage.onerror = () => { sceneImage.src = renderVisualCard(sceneIndex); };
     sceneImage.src = item.src;
     captionText.textContent = captionsVisible ? currentScenes[sceneIndex] : '';
     videoStatus.textContent = `Cena ${sceneIndex + 1}/${currentScenes.length}`;
@@ -234,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
     voice.lang = currentLang;
     voice.rate = getDuration() === 10 ? 1.12 : getDuration() === 30 ? 0.95 : 1;
     window.speechSynthesis.speak(voice);
-    setState('Narrando no navegador');
+    setState('Narrando grátis no navegador');
   }
 
   function toggleCaptions() {
