@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vídeo IA Studio</title>
-  <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body>
   <main class="app-shell">
@@ -43,14 +43,39 @@
           </label>
         </div>
 
-        <p class="note">Narração grátis disponível pelo navegador. O GitHub Pages não consegue exportar essa voz dentro do vídeo sem backend/API TTS.</p>
+        <div class="audio-tools">
+          <label>
+            Narração MP3 local
+            <input id="audioInput" type="file" accept="audio/*" />
+          </label>
+
+          <label>
+            Endpoint TTS opcional
+            <input id="ttsEndpoint" type="url" placeholder="https://seu-backend.com/api/tts" />
+          </label>
+
+          <label>
+            Voz TTS
+            <select id="ttsVoice">
+              <option value="pt-BR-FranciscaNeural" selected>Francisca PT-BR</option>
+              <option value="pt-BR-AntonioNeural">Antonio PT-BR</option>
+              <option value="en-US-JennyNeural">Jenny EN-US</option>
+            </select>
+          </label>
+
+          <audio id="audioPreview" controls></audio>
+        </div>
+
+        <p class="note">Correções aplicadas: CORS em imagens, preload/cache, fallback visual, exportação WebM com áudio enviado ou gerado por endpoint TTS. A voz do botão Narrar grátis é só prévia e não entra no arquivo.</p>
 
         <div class="actions wrap">
           <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
           <button id="mediaBtn" class="secondary" type="button">Buscar mídias</button>
           <button id="voiceBtn" class="secondary" type="button">Narrar grátis</button>
+          <button id="ttsBtn" class="secondary" type="button">Gerar TTS</button>
           <button id="captionBtn" class="secondary" type="button">Legendas</button>
           <button id="exportBtn" class="secondary" type="button">Exportar sem voz</button>
+          <button id="exportAudioBtn" class="secondary important" type="button">Exportar com áudio</button>
         </div>
       </section>
 
@@ -61,7 +86,7 @@
         </button>
         <button class="feature-card" id="featureVoice" type="button">
           <span>🎙️</span>
-          <p>Voz grátis do navegador</p>
+          <p>Narração local ou endpoint TTS</p>
         </button>
         <button class="feature-card" id="featureCaptions" type="button">
           <span>💬</span>
@@ -69,7 +94,7 @@
         </button>
         <button class="feature-card" id="featureExport" type="button">
           <span>📲</span>
-          <p>Exportar WebM sem voz</p>
+          <p>Exportar WebM com ou sem áudio</p>
         </button>
       </section>
 
@@ -80,8 +105,8 @@
         </div>
 
         <div class="video-frame" id="videoFrame">
-          <img id="sceneImage" alt="Imagem da cena" />
-          <video id="sceneVideo" muted loop playsinline></video>
+          <img id="sceneImage" alt="Imagem da cena" crossorigin="anonymous" />
+          <video id="sceneVideo" muted loop playsinline crossorigin="anonymous"></video>
           <div class="gradient"></div>
           <div class="caption" id="captionText">Digite um tema para gerar o vídeo.</div>
         </div>
@@ -115,6 +140,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
