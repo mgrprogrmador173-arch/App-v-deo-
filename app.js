@@ -16,7 +16,6 @@ const timeline = document.getElementById('timeline');
 const mediaGrid = document.getElementById('mediaGrid');
 const mediaSource = document.getElementById('mediaSource');
 const renderCanvas = document.getElementById('renderCanvas');
-const videoFrame = document.getElementById('videoFrame');
 
 let currentScript = '';
 let currentScenes = [];
@@ -27,10 +26,10 @@ let captionsVisible = true;
 let currentLang = 'pt-BR';
 
 const fallbackMedia = [
-  'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=720&q=80',
-  'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=720&q=80',
-  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=720&q=80',
-  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=720&q=80'
+  'https://picsum.photos/seed/space-ai-1/720/1280',
+  'https://picsum.photos/seed/space-ai-2/720/1280',
+  'https://picsum.photos/seed/space-ai-3/720/1280',
+  'https://picsum.photos/seed/space-ai-4/720/1280'
 ];
 
 function setState(message) {
@@ -39,7 +38,7 @@ function setState(message) {
 }
 
 function cleanText(text) {
-  return text.replace(/\s+/g, ' ').trim();
+  return String(text || '').replace(/\s+/g, ' ').trim();
 }
 
 function isProbablyTheme(text) {
@@ -59,7 +58,7 @@ function splitIntoScenes(script) {
   if (sentences.length >= 4) return sentences.slice(0, 4);
 
   const words = script.split(' ');
-  const chunkSize = Math.ceil(words.length / 4);
+  const chunkSize = Math.max(1, Math.ceil(words.length / 4));
   return Array.from({ length: 4 }, (_, index) => {
     return words.slice(index * chunkSize, (index + 1) * chunkSize).join(' ');
   }).filter(Boolean);
@@ -84,7 +83,7 @@ async function searchWikimediaMedia(query) {
     origin: '*',
     action: 'query',
     generator: 'search',
-    gsrsearch: `${query} filetype:bitmap|drawing|video`,
+    gsrsearch: `${query} filetype:bitmap`,
     gsrnamespace: '6',
     gsrlimit: '12',
     prop: 'imageinfo',
@@ -94,16 +93,18 @@ async function searchWikimediaMedia(query) {
   });
 
   const response = await fetch(`${api}?${params}`);
+  if (!response.ok) throw new Error('Erro ao buscar mídias');
+
   const data = await response.json();
   const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
 
   return pages
     .map(page => {
       const info = page.imageinfo?.[0];
-      if (!info) return null;
+      if (!info || !info.mime?.startsWith('image')) return null;
       return {
         title: page.title,
-        type: info.mime?.startsWith('video') ? 'video' : 'image',
+        type: 'image',
         src: info.thumburl || info.url,
         original: info.url
       };
@@ -141,25 +142,16 @@ async function loadMedia() {
 function renderMediaGrid() {
   mediaGrid.innerHTML = '';
 
-  currentMedia.slice(0, 6).forEach((item, index) => {
+  currentMedia.slice(0, 6).forEach((item) => {
     const card = document.createElement('button');
     card.className = 'media-item';
     card.title = item.title;
 
-    if (item.type === 'video') {
-      const video = document.createElement('video');
-      video.src = item.src;
-      video.muted = true;
-      video.loop = true;
-      video.playsInline = true;
-      card.appendChild(video);
-      card.addEventListener('mouseenter', () => video.play().catch(() => {}));
-    } else {
-      const img = document.createElement('img');
-      img.src = item.src;
-      img.alt = item.title;
-      card.appendChild(img);
-    }
+    const img = document.createElement('img');
+    img.src = item.src;
+    img.alt = item.title;
+    img.loading = 'lazy';
+    card.appendChild(img);
 
     card.addEventListener('click', () => {
       currentMedia[sceneIndex] = item;
@@ -187,18 +179,10 @@ function showScene(index) {
   const media = currentMedia[sceneIndex % Math.max(currentMedia.length, 1)];
 
   captionText.textContent = captionsVisible ? scene : '';
-  sceneImage.style.display = 'none';
   sceneVideo.style.display = 'none';
   sceneVideo.pause();
-
-  if (media?.type === 'video') {
-    sceneVideo.src = media.src;
-    sceneVideo.style.display = 'block';
-    sceneVideo.play().catch(() => {});
-  } else {
-    sceneImage.src = media?.src || fallbackMedia[sceneIndex % fallbackMedia.length];
-    sceneImage.style.display = 'block';
-  }
+  sceneImage.src = media?.src || fallbackMedia[sceneIndex % fallbackMedia.length];
+  sceneImage.style.display = 'block';
 
   videoStatus.textContent = `Cena ${sceneIndex + 1}/${currentScenes.length}`;
   renderTimeline(sceneIndex);
@@ -225,17 +209,15 @@ async function generateVideo() {
   scriptOutput.value = currentScript;
 
   await loadMedia();
-  setState('Vídeo gerado');
+  setState('Prévia gerada');
   playPreview();
   saveProject();
 }
 
 function speakScript() {
-  if (!currentScript) {
-    currentScript = cleanText(scriptOutput.value || input.value);
-  }
-
+  if (!currentScript) currentScript = cleanText(scriptOutput.value || input.value);
   if (!currentScript) return;
+
   if (!('speechSynthesis' in window)) {
     alert('Seu navegador não suporta narração automática.');
     return;
@@ -257,42 +239,96 @@ function toggleCaptions() {
   setState(captionsVisible ? 'Legendas ativadas' : 'Legendas ocultas');
 }
 
-function drawCurrentFrame(ctx) {
-  ctx.fillStyle = '#070815';
-  ctx.fillRect(0, 0, renderCanvas.width, renderCanvas.height);
+function getSupportedMimeType() {
+  const types = [
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm'
+  ];
 
-  const source = sceneVideo.style.display === 'block' ? sceneVideo : sceneImage;
+  return types.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
 
-  try {
-    const sw = source.videoWidth || source.naturalWidth || 720;
-    const sh = source.videoHeight || source.naturalHeight || 1280;
-    const scale = Math.max(renderCanvas.width / sw, renderCanvas.height / sh);
-    const dw = sw * scale;
-    const dh = sh * scale;
-    const dx = (renderCanvas.width - dw) / 2;
-    const dy = (renderCanvas.height - dh) / 2;
-    ctx.drawImage(source, dx, dy, dw, dh);
-  } catch (error) {
-    ctx.fillStyle = '#11142a';
-    ctx.fillRect(0, 0, renderCanvas.width, renderCanvas.height);
-  }
+function drawExportFrame(ctx, scene, frame, sceneNumber) {
+  const w = renderCanvas.width;
+  const h = renderCanvas.height;
+  const progress = (frame % 120) / 120;
 
-  const gradient = ctx.createLinearGradient(0, 500, 0, 1280);
-  gradient.addColorStop(0, 'rgba(0,0,0,0)');
-  gradient.addColorStop(1, 'rgba(0,0,0,0.92)');
+  const gradient = ctx.createLinearGradient(0, 0, w, h);
+  gradient.addColorStop(0, `hsl(${245 + sceneNumber * 28}, 85%, ${18 + progress * 6}%)`);
+  gradient.addColorStop(0.45, `hsl(${205 + sceneNumber * 18}, 90%, 12%)`);
+  gradient.addColorStop(1, '#050712');
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 720, 1280);
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.save();
+  ctx.globalAlpha = 0.32;
+  for (let i = 0; i < 16; i++) {
+    const x = (Math.sin(frame * 0.018 + i) * 240) + 360;
+    const y = ((frame * (1.2 + i * 0.08)) + i * 110) % h;
+    ctx.beginPath();
+    ctx.arc(x, y, 2 + (i % 4), 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(w / 2, h * 0.35);
+  ctx.rotate(frame * 0.002);
+  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 120 + i * 55, 42 + i * 22, i * 0.45, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  const bottom = ctx.createLinearGradient(0, h * 0.45, 0, h);
+  bottom.addColorStop(0, 'rgba(0,0,0,0)');
+  bottom.addColorStop(1, 'rgba(0,0,0,0.92)');
+  ctx.fillStyle = bottom;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  roundRect(ctx, 52, 72, 280, 58, 29);
+  ctx.fill();
+
+  ctx.fillStyle = '#2eff9b';
+  ctx.font = 'bold 24px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText(`CENA ${sceneNumber + 1}/${currentScenes.length}`, 82, 110);
 
   if (captionsVisible) {
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 48px Arial';
+    ctx.font = 'bold 52px Arial';
     ctx.textAlign = 'center';
-    wrapText(ctx, captionText.textContent, 360, 1080, 640, 58);
+    wrapText(ctx, scene, w / 2, h - 260, w - 90, 62);
   }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = '24px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Vídeo IA Studio', w / 2, h - 72);
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-  const words = text.split(' ');
+  const words = cleanText(text).split(' ');
   let line = '';
   const lines = [];
 
@@ -307,9 +343,10 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   });
   lines.push(line);
 
-  lines.slice(-4).forEach((textLine, index) => {
-    ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-    ctx.lineWidth = 8;
+  const finalLines = lines.slice(-5);
+  finalLines.forEach((textLine, index) => {
+    ctx.strokeStyle = 'rgba(0,0,0,0.78)';
+    ctx.lineWidth = 10;
     ctx.strokeText(textLine.trim(), x, y + index * lineHeight);
     ctx.fillText(textLine.trim(), x, y + index * lineHeight);
   });
@@ -323,45 +360,69 @@ async function exportWebM() {
     return;
   }
 
-  setState('Exportando vídeo...');
+  const mimeType = getSupportedMimeType();
+  if (!mimeType) {
+    alert('Formato WebM não suportado neste navegador. Tente no Chrome ou Edge.');
+    return;
+  }
+
+  setState('Gerando arquivo de vídeo...');
   clearInterval(sceneTimer);
 
   const ctx = renderCanvas.getContext('2d');
-  const stream = renderCanvas.captureStream(30);
-  const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+  const fps = 30;
+  const framesPerScene = 120;
+  const totalFrames = currentScenes.length * framesPerScene;
+  let frame = 0;
+
+  drawExportFrame(ctx, currentScenes[0], 0, 0);
+
+  const stream = renderCanvas.captureStream(fps);
+  const recorder = new MediaRecorder(stream, { mimeType });
   const chunks = [];
 
   recorder.ondataavailable = event => {
-    if (event.data.size) chunks.push(event.data);
+    if (event.data && event.data.size > 0) chunks.push(event.data);
+  };
+
+  recorder.onerror = () => {
+    setState('Erro ao exportar');
+    alert('Erro ao gerar vídeo. Tente novamente no Chrome.');
   };
 
   recorder.onstop = () => {
-    const blob = new Blob(chunks, { type: 'video/webm' });
+    const blob = new Blob(chunks, { type: mimeType });
+    if (!blob.size) {
+      setState('Arquivo vazio');
+      alert('O vídeo saiu vazio. Tente novamente no Chrome ou Edge.');
+      playPreview();
+      return;
+    }
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = 'video-ia-studio.webm';
+    document.body.appendChild(link);
     link.click();
+    link.remove();
     URL.revokeObjectURL(url);
     setState('Vídeo exportado');
     playPreview();
   };
 
-  recorder.start();
+  recorder.start(250);
 
-  let frame = 0;
-  const totalFrames = currentScenes.length * 120;
   const exportTimer = setInterval(() => {
-    const nextIndex = Math.floor(frame / 120) % currentScenes.length;
-    if (nextIndex !== sceneIndex) showScene(nextIndex);
-    drawCurrentFrame(ctx);
+    const activeScene = Math.floor(frame / framesPerScene) % currentScenes.length;
+    drawExportFrame(ctx, currentScenes[activeScene], frame, activeScene);
     frame++;
 
     if (frame >= totalFrames) {
       clearInterval(exportTimer);
       recorder.stop();
     }
-  }, 1000 / 30);
+  }, 1000 / fps);
 }
 
 function saveProject() {
@@ -418,8 +479,13 @@ voiceBtn.addEventListener('click', speakScript);
 captionBtn.addEventListener('click', toggleCaptions);
 exportBtn.addEventListener('click', exportWebM);
 copyBtn.addEventListener('click', async () => {
-  await navigator.clipboard.writeText(scriptOutput.value);
-  setState('Roteiro copiado');
+  try {
+    await navigator.clipboard.writeText(scriptOutput.value);
+    setState('Roteiro copiado');
+  } catch {
+    scriptOutput.select();
+    setState('Selecione e copie o roteiro');
+  }
 });
 languageBtn.addEventListener('click', toggleLanguage);
 
