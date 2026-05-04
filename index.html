@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vídeo IA Studio</title>
-  <link rel="stylesheet" href="style.css?v=12" />
+  <link rel="stylesheet" href="style.css?v=13" />
 </head>
 <body>
   <main class="app-shell">
@@ -24,23 +24,22 @@
         </div>
 
         <div class="audio-tools">
-          <label>Groq API Key<input id="groqKeyInput" type="password" placeholder="Cole sua chave Groq aqui" /></label>
-          <label>Modelo Groq texto<select id="groqTextModel"><option value="llama-3.1-8b-instant" selected>Llama 3.1 8B Instant</option><option value="llama-3.3-70b-versatile">Llama 3.3 70B</option></select></label>
-          <label>Voz Groq TTS<select id="groqVoice"><option value="Fritz-PlayAI" selected>Fritz</option><option value="Arista-PlayAI">Arista</option><option value="Atlas-PlayAI">Atlas</option><option value="Basil-PlayAI">Basil</option><option value="Briggs-PlayAI">Briggs</option><option value="Calum-PlayAI">Calum</option><option value="Celeste-PlayAI">Celeste</option><option value="Cheyenne-PlayAI">Cheyenne</option><option value="Chip-PlayAI">Chip</option><option value="Cillian-PlayAI">Cillian</option><option value="Deedee-PlayAI">Deedee</option><option value="Gail-PlayAI">Gail</option><option value="Indigo-PlayAI">Indigo</option><option value="Mamaw-PlayAI">Mamaw</option><option value="Mason-PlayAI">Mason</option><option value="Mikail-PlayAI">Mikail</option><option value="Mitch-PlayAI">Mitch</option><option value="Quinn-PlayAI">Quinn</option><option value="Thunder-PlayAI">Thunder</option></select></label>
+          <label>OpenRouter / Gemma API Key<input id="openRouterKeyInput" type="password" placeholder="Cole sua chave OpenRouter/Gemma aqui" /></label>
+          <label>Modelo Gemma<select id="gemmaTextModel"><option value="google/gemma-3-27b-it:free" selected>Gemma 3 27B Free</option><option value="google/gemma-3-12b-it:free">Gemma 3 12B Free</option><option value="google/gemma-3-4b-it:free">Gemma 3 4B Free</option></select></label>
           <label>Narração MP3 local<input id="audioInput" type="file" accept="audio/*" /></label>
           <label>Endpoint TTS opcional<input id="ttsEndpoint" type="url" placeholder="https://seu-backend.com/api/tts" /></label>
           <label>Voz TTS antiga<select id="ttsVoice"><option value="pt-BR-FranciscaNeural" selected>Francisca PT-BR</option><option value="pt-BR-AntonioNeural">Antonio PT-BR</option><option value="en-US-JennyNeural">Jenny EN-US</option></select></label>
           <audio id="audioPreview" controls></audio>
         </div>
 
-        <p class="note">A chave Groq fica salva só no seu navegador. Em app público, o ideal é usar backend proxy para não expor a chave.</p>
+        <p class="note">Gemma/OpenRouter gera roteiro por IA. Para áudio, use MP3 local ou endpoint TTS, pois Gemma não gera narração diretamente.</p>
 
         <div class="actions wrap">
           <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
-          <button id="groqScriptBtn" class="secondary important" type="button">Roteiro com Groq</button>
+          <button id="gemmaScriptBtn" class="secondary important" type="button">Roteiro com Gemma</button>
           <button id="mediaBtn" class="secondary" type="button">Buscar mídias</button>
           <button id="voiceBtn" class="secondary" type="button">Narrar grátis</button>
-          <button id="groqAudioBtn" class="secondary important" type="button">Áudio Groq</button>
+          <button id="gemmaAudioBtn" class="secondary important" type="button">Áudio Gemma</button>
           <button id="ttsBtn" class="secondary" type="button">Gerar TTS</button>
           <button id="captionBtn" class="secondary" type="button">Legendas</button>
           <button id="exportBtn" class="secondary" type="button">Exportar sem voz</button>
@@ -50,7 +49,7 @@
 
       <section class="status-grid">
         <button class="feature-card" id="featureMedia" type="button"><span>🌐</span><p>Pexels, Wikimedia, Openverse e NASA</p></button>
-        <button class="feature-card" id="featureVoice" type="button"><span>🎙️</span><p>Groq TTS, áudio local ou endpoint</p></button>
+        <button class="feature-card" id="featureVoice" type="button"><span>🎙️</span><p>MP3 local ou endpoint TTS</p></button>
         <button class="feature-card" id="featureCaptions" type="button"><span>💬</span><p>Legendas automáticas</p></button>
         <button class="feature-card" id="featureExport" type="button"><span>📲</span><p>Exportar WebM</p></button>
       </section>
@@ -62,6 +61,6 @@
     </section>
   </main>
   <script src="app.js?v=11"></script>
-  <script src="groq-addon.js?v=1"></script>
+  <script src="groq-addon.js?v=2"></script>
 </body>
 </html>
