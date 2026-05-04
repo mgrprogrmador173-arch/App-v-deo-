@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vídeo IA Studio</title>
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=5" />
 </head>
 <body>
   <main class="app-shell">
@@ -18,26 +18,47 @@
       </header>
 
       <section class="hero-card">
-        <label for="scriptInput">Roteiro ou tema</label>
-        <textarea id="scriptInput" placeholder="Ex: Crie um vídeo sobre buracos negros em 30 segundos..."></textarea>
+        <label for="scriptInput">Tema ou roteiro</label>
+        <textarea id="scriptInput" placeholder="Ex: Buracos negros, IA criando vídeos, mistérios do universo..."></textarea>
+
+        <div class="control-grid">
+          <label>
+            Duração
+            <select id="durationSelect">
+              <option value="10">10 segundos</option>
+              <option value="15" selected>15 segundos</option>
+              <option value="30">30 segundos</option>
+            </select>
+          </label>
+
+          <label>
+            Fonte de mídia
+            <select id="mediaProvider">
+              <option value="wikimedia" selected>Wikimedia grátis</option>
+              <option value="local">Visual local</option>
+            </select>
+          </label>
+        </div>
+
+        <p class="note">A narração toca no navegador. Para exportar MP4/WebM com voz real, será necessário adicionar API TTS ou backend.</p>
 
         <div class="actions wrap">
-          <button id="generateBtn" class="primary" type="button">Gerar vídeo com IA</button>
-          <button id="mediaBtn" class="secondary" type="button">Mídias</button>
+          <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
+          <button id="mediaBtn" class="secondary" type="button">Buscar mídias</button>
           <button id="voiceBtn" class="secondary" type="button">Narrar</button>
           <button id="captionBtn" class="secondary" type="button">Legendas</button>
-          <button id="exportBtn" class="secondary" type="button">Exportar</button>
+          <button id="exportBtn" class="secondary" type="button">Exportar sem voz</button>
         </div>
       </section>
 
       <section class="status-grid">
         <button class="feature-card" id="featureMedia" type="button">
           <span>🌐</span>
-          <p>Gerar imagens grátis</p>
+          <p>Buscar imagens gratuitas</p>
         </button>
         <button class="feature-card" id="featureVoice" type="button">
           <span>🎙️</span>
-          <p>Criar narração grátis</p>
+          <p>Narrar no navegador</p>
         </button>
         <button class="feature-card" id="featureCaptions" type="button">
           <span>💬</span>
@@ -45,7 +66,7 @@
         </button>
         <button class="feature-card" id="featureExport" type="button">
           <span>📲</span>
-          <p>Exportar vídeo WebM</p>
+          <p>Exportar WebM</p>
         </button>
       </section>
 
@@ -68,7 +89,7 @@
 
       <section class="script-output">
         <div class="section-title">
-          <h2>Roteiro e legendas</h2>
+          <h2>Roteiro gerado</h2>
           <button id="copyBtn" class="mini-btn" type="button">Copiar</button>
         </div>
         <textarea id="scriptOutput" class="output-area">Seu roteiro aparecerá aqui.</textarea>
@@ -77,7 +98,7 @@
       <section class="script-output media-panel">
         <div class="section-title">
           <h2>Mídias encontradas</h2>
-          <span id="mediaSource">Imagens locais</span>
+          <span id="mediaSource">Wikimedia grátis</span>
         </div>
         <div id="mediaGrid" class="media-grid"></div>
       </section>
@@ -91,6 +112,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
