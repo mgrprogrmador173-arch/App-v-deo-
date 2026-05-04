@@ -2,11 +2,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const input = document.getElementById('scriptInput');
   const durationSelect = document.getElementById('durationSelect');
   const mediaProvider = document.getElementById('mediaProvider');
+  const audioInput = document.getElementById('audioInput');
+  const audioPreview = document.getElementById('audioPreview');
+  const ttsEndpoint = document.getElementById('ttsEndpoint');
+  const ttsVoice = document.getElementById('ttsVoice');
   const generateBtn = document.getElementById('generateBtn');
   const mediaBtn = document.getElementById('mediaBtn');
   const voiceBtn = document.getElementById('voiceBtn');
+  const ttsBtn = document.getElementById('ttsBtn');
   const captionBtn = document.getElementById('captionBtn');
   const exportBtn = document.getElementById('exportBtn');
+  const exportAudioBtn = document.getElementById('exportAudioBtn');
   const copyBtn = document.getElementById('copyBtn');
   const languageBtn = document.getElementById('languageBtn');
   const appState = document.getElementById('appState');
@@ -23,11 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentScript = '';
   let currentScenes = [];
   let currentMedia = [];
+  let loadedImages = [];
   let sceneIndex = 0;
   let sceneTimer = null;
   let captionsVisible = true;
   let currentLang = 'pt-BR';
   let selectedTheme = 0;
+  let uploadedAudioUrl = '';
 
   const themes = [
     ['#12002f', '#7c3cff', '#00d4ff'],
@@ -151,6 +159,29 @@ document.addEventListener('DOMContentLoaded', () => {
     return Array.from({ length: Math.max(6, sceneCountByDuration()) }, (_, i) => ({ type: 'image', src: renderVisualCard(i), title: `Visual ${i + 1}`, provider: 'Visual local' }));
   }
 
+  function loadImageSafe(src, index = 0) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.referrerPolicy = 'no-referrer';
+      img.onload = () => resolve(img);
+      img.onerror = () => {
+        const fallback = new Image();
+        fallback.onload = () => resolve(fallback);
+        fallback.src = renderVisualCard(index);
+      };
+      img.src = src;
+    });
+  }
+
+  async function preloadImages() {
+    setState('Pré-carregando imagens...');
+    loadedImages = await Promise.all(
+      currentMedia.slice(0, Math.max(1, currentScenes.length)).map((item, index) => loadImageSafe(item.src, index))
+    );
+    setState('Imagens prontas');
+  }
+
   async function loadMedia() {
     const provider = mediaProvider.value;
     const query = extractKeywords(input.value || currentScript);
@@ -166,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentMedia = localMediaList();
       mediaSource.textContent = 'Visual local';
       renderMediaGrid();
+      await preloadImages();
       setState('Mídias locais prontas');
       return;
     }
@@ -177,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
           currentMedia = found;
           mediaSource.textContent = found[0].provider || 'Fonte grátis';
           renderMediaGrid();
+          await preloadImages();
           setState(`Mídias prontas: ${mediaSource.textContent}`);
           return;
         }
@@ -188,6 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentMedia = localMediaList();
     mediaSource.textContent = 'Visual local';
     renderMediaGrid();
+    await preloadImages();
     setState('Mídias locais prontas');
   }
 
@@ -198,13 +232,15 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.className = 'media-item';
       btn.type = 'button';
       const img = document.createElement('img');
+      img.crossOrigin = 'anonymous';
+      img.referrerPolicy = 'no-referrer';
       img.src = item.src;
       img.alt = item.title || `Mídia ${i + 1}`;
-      img.referrerPolicy = 'no-referrer';
       img.onerror = () => { img.src = renderVisualCard(i); };
       btn.appendChild(img);
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         currentMedia[sceneIndex] = item;
+        loadedImages[sceneIndex] = await loadImageSafe(item.src, sceneIndex);
         showScene(sceneIndex);
         setState(`Mídia ${i + 1} selecionada`);
       });
@@ -240,6 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = currentMedia[sceneIndex % Math.max(1, currentMedia.length)] || localMediaList()[sceneIndex];
     sceneVideo.style.display = 'none';
     sceneImage.style.display = 'block';
+    sceneImage.crossOrigin = 'anonymous';
+    sceneImage.referrerPolicy = 'no-referrer';
     sceneImage.onerror = () => { sceneImage.src = renderVisualCard(sceneIndex); };
     sceneImage.src = item.src;
     captionText.textContent = captionsVisible ? currentScenes[sceneIndex] : '';
@@ -281,6 +319,33 @@ document.addEventListener('DOMContentLoaded', () => {
     setState('Narrando grátis no navegador');
   }
 
+  async function generateTTS() {
+    if (!currentScript && !buildProject()) return;
+    const endpoint = cleanText(ttsEndpoint.value);
+    if (!endpoint) {
+      alert('Cole um endpoint TTS. Exemplo: backend com Edge TTS retornando MP3.');
+      return;
+    }
+
+    try {
+      setState('Gerando áudio TTS...');
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: currentScript, voice: ttsVoice.value, lang: currentLang })
+      });
+      if (!response.ok) throw new Error('Endpoint TTS falhou');
+      const blob = await response.blob();
+      uploadedAudioUrl = URL.createObjectURL(blob);
+      audioPreview.src = uploadedAudioUrl;
+      audioPreview.load();
+      setState('Áudio TTS pronto');
+    } catch (error) {
+      setState('Erro no TTS');
+      alert(error.message);
+    }
+  }
+
   function toggleCaptions() {
     captionsVisible = !captionsVisible;
     captionBtn.textContent = captionsVisible ? 'Legendas' : 'Sem legenda';
@@ -288,90 +353,210 @@ document.addEventListener('DOMContentLoaded', () => {
     setState(captionsVisible ? 'Legendas ligadas' : 'Legendas desligadas');
   }
 
+  function drawImageCover(ctx, img, w, h) {
+    try {
+      const scale = Math.max(w / img.width, h / img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2;
+      ctx.drawImage(img, dx, dy, dw, dh);
+    } catch {
+      const colors = themes[selectedTheme % themes.length];
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, colors[0]);
+      grad.addColorStop(.55, colors[1]);
+      grad.addColorStop(1, colors[2]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
+  }
+
   function drawFrame(ctx, frame) {
     const fps = 30;
     const totalFrames = getDuration() * fps;
     const framesPerScene = Math.max(1, Math.floor(totalFrames / Math.max(1, currentScenes.length)));
     const scene = Math.min(currentScenes.length - 1, Math.floor(frame / framesPerScene));
-    const colors = themes[(scene + selectedTheme) % themes.length];
     const w = renderCanvas.width;
     const h = renderCanvas.height;
     const p = (frame % framesPerScene) / framesPerScene;
+    const img = loadedImages[scene % Math.max(1, loadedImages.length)];
 
-    const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, colors[0]); grad.addColorStop(.55, colors[1]); grad.addColorStop(1, colors[2]);
-    ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
-    ctx.globalAlpha = .25; ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(160 + scene * 70 + p * 90, 300, 150, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(560 - p * 130, 790 - scene * 35, 220, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#050712';
+    ctx.fillRect(0, 0, w, h);
+    if (img) drawImageCover(ctx, img, w, h);
+
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(140 + scene * 55 + p * 110, 240, 140, 0, Math.PI * 2);
+    ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.fillStyle = 'rgba(0,0,0,.58)'; ctx.fillRect(0, h * .58, w, h * .42);
-    ctx.fillStyle = '#2eff9b'; ctx.font = 'bold 28px Arial'; ctx.textAlign = 'left';
+
+    const fade = Math.min(1, p * 4, (1 - p) * 4);
+    ctx.fillStyle = `rgba(0,0,0,${0.22 * (1 - fade)})`;
+    ctx.fillRect(0, 0, w, h);
+
+    const bottom = ctx.createLinearGradient(0, h * .45, 0, h);
+    bottom.addColorStop(0, 'rgba(0,0,0,0)');
+    bottom.addColorStop(1, 'rgba(0,0,0,.86)');
+    ctx.fillStyle = bottom;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = '#2eff9b';
+    ctx.font = 'bold 28px Arial';
+    ctx.textAlign = 'left';
     ctx.fillText(`CENA ${scene + 1}/${currentScenes.length}`, 52, 94);
+
     if (captionsVisible) {
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 52px Arial'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 52px Arial';
+      ctx.textAlign = 'center';
       wrapText(ctx, currentScenes[scene], w / 2, h - 280, w - 80, 62);
     }
-    ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '26px Arial'; ctx.textAlign = 'center';
+
+    ctx.fillStyle = 'rgba(255,255,255,.78)';
+    ctx.font = '26px Arial';
+    ctx.textAlign = 'center';
     ctx.fillText(`Vídeo IA Studio • ${getDuration()}s`, w / 2, h - 70);
   }
 
   function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    const words = cleanText(text).split(' '); let line = ''; const lines = [];
+    const words = cleanText(text).split(' ');
+    let line = '';
+    const lines = [];
     words.forEach(word => {
       const test = line + word + ' ';
-      if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = word + ' '; } else { line = test; }
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = word + ' ';
+      } else {
+        line = test;
+      }
     });
     lines.push(line);
     lines.slice(-5).forEach((l, i) => {
-      ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.lineWidth = 10;
-      ctx.strokeText(l.trim(), x, y + i * lineHeight); ctx.fillText(l.trim(), x, y + i * lineHeight);
+      ctx.strokeStyle = 'rgba(0,0,0,.8)';
+      ctx.lineWidth = 10;
+      ctx.strokeText(l.trim(), x, y + i * lineHeight);
+      ctx.fillText(l.trim(), x, y + i * lineHeight);
     });
   }
 
-  function exportVideo() {
+  async function exportVideo(withAudio = false) {
     if (!currentScenes.length && !buildProject()) return;
+    if (!loadedImages.length) await preloadImages();
     if (!window.MediaRecorder || !renderCanvas.captureStream) {
-      alert('Exportação não suportada neste navegador. Use Chrome ou Edge.'); return;
+      alert('Exportação não suportada neste navegador. Use Chrome ou Edge.');
+      return;
     }
-    const type = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' : 'video/webm';
-    const stream = renderCanvas.captureStream(30);
-    const recorder = new MediaRecorder(stream, { mimeType: type });
-    const chunks = []; const ctx = renderCanvas.getContext('2d'); let frame = 0;
+
+    const type = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') ? 'video/webm;codecs=vp8,opus' : 'video/webm';
+    const canvasStream = renderCanvas.captureStream(30);
+    const outputStream = new MediaStream(canvasStream.getVideoTracks());
+    let exportAudio = null;
+
+    if (withAudio) {
+      if (!audioPreview.src) {
+        alert('Adicione um MP3 local ou gere áudio TTS primeiro.');
+        return;
+      }
+      exportAudio = new Audio(audioPreview.src);
+      exportAudio.crossOrigin = 'anonymous';
+      exportAudio.currentTime = 0;
+      exportAudio.volume = 1;
+      await exportAudio.play().catch(() => null);
+      exportAudio.pause();
+      exportAudio.currentTime = 0;
+      const audioStream = exportAudio.captureStream ? exportAudio.captureStream() : exportAudio.mozCaptureStream?.();
+      if (!audioStream || !audioStream.getAudioTracks().length) {
+        alert('Este navegador não conseguiu capturar o áudio. Use Chrome/Edge ou exporte sem voz.');
+        return;
+      }
+      audioStream.getAudioTracks().forEach(track => outputStream.addTrack(track));
+    }
+
+    const recorder = new MediaRecorder(outputStream, { mimeType: type });
+    const chunks = [];
+    const ctx = renderCanvas.getContext('2d');
+    let frame = 0;
     const total = getDuration() * 30;
-    setState('Exportando vídeo sem voz...'); clearInterval(sceneTimer);
+
+    setState(withAudio ? 'Exportando vídeo com áudio...' : 'Exportando vídeo sem voz...');
+    clearInterval(sceneTimer);
+
     recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     recorder.onstop = () => {
+      if (exportAudio) exportAudio.pause();
       const blob = new Blob(chunks, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob); const a = document.createElement('a');
-      a.href = url; a.download = `video-ia-studio-${getDuration()}s.webm`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-      setState('Vídeo baixado sem voz'); playPreview();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `video-ia-studio-${getDuration()}s${withAudio ? '-com-audio' : ''}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setState(withAudio ? 'Vídeo com áudio baixado' : 'Vídeo baixado sem voz');
+      playPreview();
     };
-    recorder.start();
+
+    drawFrame(ctx, 0);
+    recorder.start(250);
+    if (exportAudio) await exportAudio.play();
+
     const timer = setInterval(() => {
-      drawFrame(ctx, frame); frame++;
-      if (frame >= total) { clearInterval(timer); recorder.stop(); }
+      drawFrame(ctx, frame);
+      if (exportAudio) exportAudio.currentTime = Math.min(getDuration(), frame / 30);
+      frame++;
+      if (frame >= total) {
+        clearInterval(timer);
+        recorder.stop();
+      }
     }, 1000 / 30);
   }
 
-  function copyScript() { scriptOutput.select(); document.execCommand('copy'); setState('Roteiro copiado'); }
-  function toggleLanguage() { currentLang = currentLang === 'pt-BR' ? 'en-US' : 'pt-BR'; languageBtn.textContent = currentLang; setState(`Idioma: ${currentLang}`); }
+  function copyScript() {
+    scriptOutput.select();
+    document.execCommand('copy');
+    setState('Roteiro copiado');
+  }
+
+  function toggleLanguage() {
+    currentLang = currentLang === 'pt-BR' ? 'en-US' : 'pt-BR';
+    languageBtn.textContent = currentLang;
+    setState(`Idioma: ${currentLang}`);
+  }
+
   function showTab(tab) {
     document.querySelectorAll('.bottom-nav button').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
     setState(tab === 'projects' ? 'Projeto salvo localmente' : tab === 'voices' ? `Voz: ${currentLang}` : tab === 'settings' ? 'Ajustes locais' : 'Tela inicial');
   }
 
+  audioInput.addEventListener('change', () => {
+    const file = audioInput.files?.[0];
+    if (!file) return;
+    if (uploadedAudioUrl) URL.revokeObjectURL(uploadedAudioUrl);
+    uploadedAudioUrl = URL.createObjectURL(file);
+    audioPreview.src = uploadedAudioUrl;
+    audioPreview.load();
+    exportBtn.textContent = 'Exportar sem voz';
+    setState('Áudio local carregado');
+  });
+
   generateBtn.addEventListener('click', generateVideo);
   mediaBtn.addEventListener('click', loadMedia);
   voiceBtn.addEventListener('click', speakScript);
+  ttsBtn.addEventListener('click', generateTTS);
   captionBtn.addEventListener('click', toggleCaptions);
-  exportBtn.addEventListener('click', exportVideo);
+  exportBtn.addEventListener('click', () => exportVideo(false));
+  exportAudioBtn.addEventListener('click', () => exportVideo(true));
   copyBtn.addEventListener('click', copyScript);
   languageBtn.addEventListener('click', toggleLanguage);
   document.getElementById('featureMedia').addEventListener('click', loadMedia);
   document.getElementById('featureVoice').addEventListener('click', speakScript);
   document.getElementById('featureCaptions').addEventListener('click', toggleCaptions);
-  document.getElementById('featureExport').addEventListener('click', exportVideo);
+  document.getElementById('featureExport').addEventListener('click', () => exportVideo(Boolean(audioPreview.src)));
   document.querySelectorAll('.bottom-nav button').forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
 
   input.value = localStorage.getItem('videoIAStudioText') || 'Mistérios do universo que a ciência ainda não conseguiu explicar';
