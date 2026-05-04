@@ -11,38 +11,42 @@
     <section class="phone">
       <header class="topbar">
         <div>
-          <p class="eyebrow">IA pronta</p>
+          <p class="eyebrow" id="appState">IA pronta</p>
           <h1>Vídeo IA Studio</h1>
         </div>
-        <button class="chip">PT-BR</button>
+        <button class="chip" id="languageBtn">PT-BR</button>
       </header>
 
       <section class="hero-card">
         <label for="scriptInput">Roteiro ou tema</label>
         <textarea id="scriptInput" placeholder="Ex: Crie um vídeo sobre buracos negros em 30 segundos..."></textarea>
-        <div class="actions">
+
+        <div class="actions wrap">
           <button id="generateBtn" class="primary">Gerar vídeo com IA</button>
+          <button id="mediaBtn" class="secondary">Mídias</button>
           <button id="voiceBtn" class="secondary">Narrar</button>
+          <button id="captionBtn" class="secondary">Legendas</button>
+          <button id="exportBtn" class="secondary">Exportar</button>
         </div>
       </section>
 
       <section class="status-grid">
-        <article>
+        <button class="feature-card" id="featureMedia">
           <span>🌐</span>
-          <p>Buscar imagens online</p>
-        </article>
-        <article>
+          <p>Buscar imagens e vídeos grátis</p>
+        </button>
+        <button class="feature-card" id="featureVoice">
           <span>🎙️</span>
-          <p>Criar narração</p>
-        </article>
-        <article>
+          <p>Criar narração grátis</p>
+        </button>
+        <button class="feature-card" id="featureCaptions">
           <span>💬</span>
           <p>Legendas automáticas</p>
-        </article>
-        <article>
+        </button>
+        <button class="feature-card" id="featureExport">
           <span>📲</span>
-          <p>Exportar vídeo</p>
-        </article>
+          <p>Exportar vídeo WebM</p>
+        </button>
       </section>
 
       <section class="preview-card">
@@ -50,24 +54,39 @@
           <p>Prévia 9:16</p>
           <span id="videoStatus">Aguardando roteiro</span>
         </div>
+
         <div class="video-frame" id="videoFrame">
-          <img id="sceneImage" alt="Imagem da cena" />
+          <img id="sceneImage" alt="Imagem da cena" crossorigin="anonymous" />
+          <video id="sceneVideo" muted loop playsinline crossorigin="anonymous"></video>
           <div class="gradient"></div>
           <div class="caption" id="captionText">Digite um tema para gerar o vídeo.</div>
         </div>
+
+        <canvas id="renderCanvas" width="720" height="1280"></canvas>
         <div class="timeline" id="timeline"></div>
       </section>
 
       <section class="script-output">
-        <h2>Roteiro gerado</h2>
-        <p id="scriptOutput">Seu roteiro aparecerá aqui.</p>
+        <div class="section-title">
+          <h2>Roteiro e legendas</h2>
+          <button id="copyBtn" class="mini-btn">Copiar</button>
+        </div>
+        <textarea id="scriptOutput" class="output-area">Seu roteiro aparecerá aqui.</textarea>
+      </section>
+
+      <section class="script-output media-panel">
+        <div class="section-title">
+          <h2>Mídias encontradas</h2>
+          <span id="mediaSource">Wikimedia Commons</span>
+        </div>
+        <div id="mediaGrid" class="media-grid"></div>
       </section>
 
       <nav class="bottom-nav">
-        <button class="active">Início</button>
-        <button>Projetos</button>
-        <button>Vozes</button>
-        <button>Ajustes</button>
+        <button class="active" data-tab="home">Início</button>
+        <button data-tab="projects">Projetos</button>
+        <button data-tab="voices">Vozes</button>
+        <button data-tab="settings">Ajustes</button>
       </nav>
     </section>
   </main>
