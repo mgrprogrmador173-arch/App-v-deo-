@@ -4,16 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vídeo IA Studio</title>
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=12" />
 </head>
 <body>
   <main class="app-shell">
     <section class="phone">
       <header class="topbar">
-        <div>
-          <p class="eyebrow" id="appState">IA pronta</p>
-          <h1>Vídeo IA Studio</h1>
-        </div>
+        <div><p class="eyebrow" id="appState">IA pronta</p><h1>Vídeo IA Studio</h1></div>
         <button class="chip" id="languageBtn" type="button">PT-BR</button>
       </header>
 
@@ -22,59 +19,28 @@
         <textarea id="scriptInput" placeholder="Ex: Buracos negros, IA criando vídeos, mistérios do universo..."></textarea>
 
         <div class="control-grid">
-          <label>
-            Duração
-            <select id="durationSelect">
-              <option value="10">10 segundos</option>
-              <option value="15" selected>15 segundos</option>
-              <option value="30">30 segundos</option>
-            </select>
-          </label>
-
-          <label>
-            Fonte de mídia
-            <select id="mediaProvider">
-              <option value="auto" selected>Automático grátis</option>
-              <option value="pexels">Pexels fotos/vídeos</option>
-              <option value="pexels-videos">Pexels vídeos</option>
-              <option value="pexels-photos">Pexels fotos</option>
-              <option value="wikimedia">Wikimedia grátis</option>
-              <option value="openverse">Openverse grátis</option>
-              <option value="nasa">NASA grátis</option>
-              <option value="local">Visual local</option>
-            </select>
-          </label>
+          <label>Duração<select id="durationSelect"><option value="10">10 segundos</option><option value="15" selected>15 segundos</option><option value="30">30 segundos</option></select></label>
+          <label>Fonte de mídia<select id="mediaProvider"><option value="auto" selected>Automático grátis</option><option value="pexels">Pexels fotos/vídeos</option><option value="pexels-videos">Pexels vídeos</option><option value="pexels-photos">Pexels fotos</option><option value="wikimedia">Wikimedia grátis</option><option value="openverse">Openverse grátis</option><option value="nasa">NASA grátis</option><option value="local">Visual local</option></select></label>
         </div>
 
         <div class="audio-tools">
-          <label>
-            Narração MP3 local
-            <input id="audioInput" type="file" accept="audio/*" />
-          </label>
-
-          <label>
-            Endpoint TTS opcional
-            <input id="ttsEndpoint" type="url" placeholder="https://seu-backend.com/api/tts" />
-          </label>
-
-          <label>
-            Voz TTS
-            <select id="ttsVoice">
-              <option value="pt-BR-FranciscaNeural" selected>Francisca PT-BR</option>
-              <option value="pt-BR-AntonioNeural">Antonio PT-BR</option>
-              <option value="en-US-JennyNeural">Jenny EN-US</option>
-            </select>
-          </label>
-
+          <label>Groq API Key<input id="groqKeyInput" type="password" placeholder="Cole sua chave Groq aqui" /></label>
+          <label>Modelo Groq texto<select id="groqTextModel"><option value="llama-3.1-8b-instant" selected>Llama 3.1 8B Instant</option><option value="llama-3.3-70b-versatile">Llama 3.3 70B</option></select></label>
+          <label>Voz Groq TTS<select id="groqVoice"><option value="Fritz-PlayAI" selected>Fritz</option><option value="Arista-PlayAI">Arista</option><option value="Atlas-PlayAI">Atlas</option><option value="Basil-PlayAI">Basil</option><option value="Briggs-PlayAI">Briggs</option><option value="Calum-PlayAI">Calum</option><option value="Celeste-PlayAI">Celeste</option><option value="Cheyenne-PlayAI">Cheyenne</option><option value="Chip-PlayAI">Chip</option><option value="Cillian-PlayAI">Cillian</option><option value="Deedee-PlayAI">Deedee</option><option value="Gail-PlayAI">Gail</option><option value="Indigo-PlayAI">Indigo</option><option value="Mamaw-PlayAI">Mamaw</option><option value="Mason-PlayAI">Mason</option><option value="Mikail-PlayAI">Mikail</option><option value="Mitch-PlayAI">Mitch</option><option value="Quinn-PlayAI">Quinn</option><option value="Thunder-PlayAI">Thunder</option></select></label>
+          <label>Narração MP3 local<input id="audioInput" type="file" accept="audio/*" /></label>
+          <label>Endpoint TTS opcional<input id="ttsEndpoint" type="url" placeholder="https://seu-backend.com/api/tts" /></label>
+          <label>Voz TTS antiga<select id="ttsVoice"><option value="pt-BR-FranciscaNeural" selected>Francisca PT-BR</option><option value="pt-BR-AntonioNeural">Antonio PT-BR</option><option value="en-US-JennyNeural">Jenny EN-US</option></select></label>
           <audio id="audioPreview" controls></audio>
         </div>
 
-        <p class="note">Correção em andamento: app restaurado para script funcional. Se a busca externa falhar, use Visual local enquanto ajustamos Pexels.</p>
+        <p class="note">A chave Groq fica salva só no seu navegador. Em app público, o ideal é usar backend proxy para não expor a chave.</p>
 
         <div class="actions wrap">
           <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
+          <button id="groqScriptBtn" class="secondary important" type="button">Roteiro com Groq</button>
           <button id="mediaBtn" class="secondary" type="button">Buscar mídias</button>
           <button id="voiceBtn" class="secondary" type="button">Narrar grátis</button>
+          <button id="groqAudioBtn" class="secondary important" type="button">Áudio Groq</button>
           <button id="ttsBtn" class="secondary" type="button">Gerar TTS</button>
           <button id="captionBtn" class="secondary" type="button">Legendas</button>
           <button id="exportBtn" class="secondary" type="button">Exportar sem voz</button>
@@ -84,42 +50,17 @@
 
       <section class="status-grid">
         <button class="feature-card" id="featureMedia" type="button"><span>🌐</span><p>Pexels, Wikimedia, Openverse e NASA</p></button>
-        <button class="feature-card" id="featureVoice" type="button"><span>🎙️</span><p>Narração local ou endpoint TTS</p></button>
+        <button class="feature-card" id="featureVoice" type="button"><span>🎙️</span><p>Groq TTS, áudio local ou endpoint</p></button>
         <button class="feature-card" id="featureCaptions" type="button"><span>💬</span><p>Legendas automáticas</p></button>
         <button class="feature-card" id="featureExport" type="button"><span>📲</span><p>Exportar WebM</p></button>
       </section>
 
-      <section class="preview-card">
-        <div class="preview-header"><p>Prévia 9:16</p><span id="videoStatus">Aguardando roteiro</span></div>
-        <div class="video-frame" id="videoFrame">
-          <img id="sceneImage" alt="Imagem da cena" />
-          <video id="sceneVideo" muted loop playsinline></video>
-          <div class="gradient"></div>
-          <div class="caption" id="captionText">Digite um tema para gerar o vídeo.</div>
-        </div>
-        <canvas id="renderCanvas" width="720" height="1280"></canvas>
-        <div class="timeline" id="timeline"></div>
-      </section>
-
-      <section class="script-output">
-        <div class="section-title"><h2>Roteiro gerado</h2><button id="copyBtn" class="mini-btn" type="button">Copiar</button></div>
-        <textarea id="scriptOutput" class="output-area">Seu roteiro aparecerá aqui.</textarea>
-      </section>
-
-      <section class="script-output media-panel">
-        <div class="section-title"><h2>Mídias encontradas</h2><span id="mediaSource">Automático grátis</span></div>
-        <div id="mediaGrid" class="media-grid"></div>
-      </section>
-
-      <nav class="bottom-nav">
-        <button class="active" data-tab="home" type="button">Início</button>
-        <button data-tab="projects" type="button">Projetos</button>
-        <button data-tab="voices" type="button">Vozes</button>
-        <button data-tab="settings" type="button">Ajustes</button>
-      </nav>
+      <section class="preview-card"><div class="preview-header"><p>Prévia 9:16</p><span id="videoStatus">Aguardando roteiro</span></div><div class="video-frame" id="videoFrame"><img id="sceneImage" alt="Imagem da cena" /><video id="sceneVideo" muted loop playsinline></video><div class="gradient"></div><div class="caption" id="captionText">Digite um tema para gerar o vídeo.</div></div><canvas id="renderCanvas" width="720" height="1280"></canvas><div class="timeline" id="timeline"></div></section>
+      <section class="script-output"><div class="section-title"><h2>Roteiro gerado</h2><button id="copyBtn" class="mini-btn" type="button">Copiar</button></div><textarea id="scriptOutput" class="output-area">Seu roteiro aparecerá aqui.</textarea></section>
+      <section class="script-output media-panel"><div class="section-title"><h2>Mídias encontradas</h2><span id="mediaSource">Automático grátis</span></div><div id="mediaGrid" class="media-grid"></div></section>
+      <nav class="bottom-nav"><button class="active" data-tab="home" type="button">Início</button><button data-tab="projects" type="button">Projetos</button><button data-tab="voices" type="button">Vozes</button><button data-tab="settings" type="button">Ajustes</button></nav>
     </section>
   </main>
-
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
