@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vídeo IA Studio</title>
-  <link rel="stylesheet" href="style.css?v=15" />
+  <link rel="stylesheet" href="style.css?v=16" />
 </head>
 <body>
   <main class="app-shell">
@@ -27,7 +27,7 @@
           <label>OpenRouter / Gemma API Key<input id="openRouterKeyInput" type="password" placeholder="Cole sua chave OpenRouter/Gemma aqui" /></label>
           <label>Modelo Gemma<select id="gemmaTextModel"><option value="google/gemma-3-27b-it:free" selected>Gemma 3 27B Free</option><option value="google/gemma-3-12b-it:free">Gemma 3 12B Free</option><option value="google/gemma-3-4b-it:free">Gemma 3 4B Free</option></select></label>
           <label>Voz do navegador<select id="browserVoiceSelect"><option>Carregando vozes...</option></select></label>
-          <label>Gerador JS externo<select id="externalTtsVoice"><option value="pt">Português meSpeak</option><option value="en/en-us">Inglês meSpeak</option></select></label>
+          <label>Gerador JS local<select id="externalTtsVoice"><option value="pt">Português JS local</option><option value="en/en-us">Inglês JS local</option></select></label>
           <label>Velocidade da voz<input id="voiceRate" type="range" min="0.7" max="1.3" step="0.05" value="1" /></label>
           <label>Tom da voz<input id="voicePitch" type="range" min="0.7" max="1.3" step="0.05" value="1" /></label>
           <label>Narração MP3 local<input id="audioInput" type="file" accept="audio/*" /></label>
@@ -36,7 +36,7 @@
           <audio id="audioPreview" controls></audio>
         </div>
 
-        <p class="note">Agora há gerador de voz do navegador e gerador JS externo meSpeak. O meSpeak pode criar um áudio WAV simples para usar na exportação.</p>
+        <p class="note">Agora há gerador de voz do navegador e gerador WAV local em JavaScript puro. Não depende mais do meSpeak nem de CDN externa.</p>
 
         <div class="actions wrap">
           <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
@@ -54,7 +54,7 @@
 
       <section class="status-grid">
         <button class="feature-card" id="featureMedia" type="button"><span>🌐</span><p>Pexels, Wikimedia, Openverse e NASA</p></button>
-        <button class="feature-card" id="featureVoice" type="button"><span>🎙️</span><p>Voz do navegador e meSpeak</p></button>
+        <button class="feature-card" id="featureVoice" type="button"><span>🎙️</span><p>Voz do navegador e WAV JS local</p></button>
         <button class="feature-card" id="featureCaptions" type="button"><span>💬</span><p>Legendas automáticas</p></button>
         <button class="feature-card" id="featureExport" type="button"><span>📲</span><p>Exportar WebM</p></button>
       </section>
@@ -68,6 +68,6 @@
   <script src="app.js?v=11"></script>
   <script src="groq-addon.js?v=2"></script>
   <script src="voice-generator.js?v=1"></script>
-  <script src="external-tts.js?v=1"></script>
+  <script src="external-tts.js?v=2"></script>
 </body>
 </html>
