@@ -34,18 +34,21 @@
           <label>
             Fonte de mídia
             <select id="mediaProvider">
-              <option value="wikimedia" selected>Wikimedia grátis</option>
+              <option value="auto" selected>Automático grátis</option>
+              <option value="wikimedia">Wikimedia grátis</option>
+              <option value="openverse">Openverse grátis</option>
+              <option value="nasa">NASA grátis</option>
               <option value="local">Visual local</option>
             </select>
           </label>
         </div>
 
-        <p class="note">A narração toca no navegador. Para exportar MP4/WebM com voz real, será necessário adicionar API TTS ou backend.</p>
+        <p class="note">Narração grátis disponível pelo navegador. O GitHub Pages não consegue exportar essa voz dentro do vídeo sem backend/API TTS.</p>
 
         <div class="actions wrap">
           <button id="generateBtn" class="primary" type="button">Gerar roteiro e vídeo</button>
           <button id="mediaBtn" class="secondary" type="button">Buscar mídias</button>
-          <button id="voiceBtn" class="secondary" type="button">Narrar</button>
+          <button id="voiceBtn" class="secondary" type="button">Narrar grátis</button>
           <button id="captionBtn" class="secondary" type="button">Legendas</button>
           <button id="exportBtn" class="secondary" type="button">Exportar sem voz</button>
         </div>
@@ -54,11 +57,11 @@
       <section class="status-grid">
         <button class="feature-card" id="featureMedia" type="button">
           <span>🌐</span>
-          <p>Buscar imagens gratuitas</p>
+          <p>Wikimedia, Openverse e NASA</p>
         </button>
         <button class="feature-card" id="featureVoice" type="button">
           <span>🎙️</span>
-          <p>Narrar no navegador</p>
+          <p>Voz grátis do navegador</p>
         </button>
         <button class="feature-card" id="featureCaptions" type="button">
           <span>💬</span>
@@ -66,7 +69,7 @@
         </button>
         <button class="feature-card" id="featureExport" type="button">
           <span>📲</span>
-          <p>Exportar WebM</p>
+          <p>Exportar WebM sem voz</p>
         </button>
       </section>
 
@@ -98,7 +101,7 @@
       <section class="script-output media-panel">
         <div class="section-title">
           <h2>Mídias encontradas</h2>
-          <span id="mediaSource">Wikimedia grátis</span>
+          <span id="mediaSource">Automático grátis</span>
         </div>
         <div id="mediaGrid" class="media-grid"></div>
       </section>
@@ -112,6 +115,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>
